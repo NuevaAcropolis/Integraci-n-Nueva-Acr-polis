@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1f4738">
+  <title>Nueva Acrópolis Huancayo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#inicio" aria-label="Nueva Acrópolis"><img src="img/logo-nueva-acropolis.png" alt="Nueva Acrópolis · Filosofía · Cultura · Voluntariado"></a>
+  <button class="menu-btn" id="menuBtn" aria-label="Abrir menú">☰</button>
+  <nav id="nav">
+    <a href="#inicio">Inicio</a><a href="#agenda">Agenda</a>
+    <a href="#explorar">Explora</a><a href="#virtudes">Virtudes</a>
+    <a href="#sedes">Sedes</a>
+  </nav>
+</header>
+
+<main id="inicio">
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">INTEGRACIÓN · NUEVA ACRÓPOLIS HUANCAYO</p>
+      <h1>ACTIVIDADES<br>DE LA SEMANA</h1>
+      <h2 id="heroWeek">—</h2>
+      <div class="gold-line"></div>
+      <blockquote>“La filosofía también se vive, se comparte y se hace en comunidad.”</blockquote>
+    </div>
+    <div class="hero-simple-values">FILOSOFÍA&nbsp;&nbsp;·&nbsp;&nbsp; CULTURA&nbsp;&nbsp;·&nbsp;&nbsp; VOLUNTARIADO</div>
+  </section>
+
+  <section class="agenda-shell" id="agenda">
+    <div class="agenda-tools">
+      <button id="prevWeek" class="icon-btn" title="Semana anterior">‹</button>
+      <div class="date-pill" id="weekPill">📅 —</div>
+      <button id="nextWeek" class="icon-btn" title="Semana siguiente">›</button>
+      <div class="view-tabs">
+        <button class="active" data-view="week">Esta semana</button>
+        <button data-view="next">Próxima semana</button>
+        <button data-view="month">Este mes</button>
+        <button data-view="all">Todos</button>
+      </div>
+      <button class="download-btn" id="downloadAgenda">⇩ Guardar agenda como imagen</button>
+    </div>
+
+    <div class="mobile-day-tabs" id="mobileDays"></div>
+    <div class="calendar-layout">
+      <div class="week-grid" id="weekGrid"></div>
+      <aside class="sidebar">
+        <article class="welcome-card">
+          <div class="welcome-photo"></div>
+          <div class="pad">
+            <h3>¿RECIÉN LLEGAS?</h3>
+            <p>Hay muchas maneras de formar parte. Descubre un espacio para ti.</p>
+            <a class="primary-btn" href="#explorar">Conoce nuestros espacios →</a>
+          </div>
+        </article>
+        <article class="upcoming">
+          <div class="section-head"><h3>PRÓXIMOS EVENTOS</h3></div>
+          <div id="upcomingList"></div>
+        </article>
+        <article class="quote-card">“Donde hay un ideal compartido,<br>siempre hay un camino.”</article>
+      </aside>
+    </div>
+  </section>
+
+  <section class="pathways" id="explorar">
+    <div><b>APRENDER</b><span>Filosofía · Lectura · Diálogo</span></div>
+    <div><b>CREAR</b><span>Arte · Música · Expresión</span></div>
+    <div><b>CONECTAR</b><span>Equipos · Comunidad · Servicio</span></div>
+  </section>
+
+
+<section class="ideals-gallery-section" id="nuestros-ideales">
+  <div class="ideals-gallery-inner">
+    <div class="ideals-intro">
+      <h2>MOMENTOS COMPARTIDOS ♡</h2>
+      <p class="ideals-subtitle">Filosofía que se vive</p>
+      <span class="ideals-divider" aria-hidden="true"></span>
+      <p class="ideals-description">Personas, ideas y acciones que hacen de Nueva Acrópolis un camino vivo.<br>Aquí compartimos algunos momentos que inspiran.</p>
+    </div>
+    <div id="schoolGallery" class="school-gallery"></div>
+  </div>
+</section>
+
+<section class="important-events-section" id="eventos-importantes">
+  <div class="important-events-heading">
+    <p class="eyebrow">ENCUENTROS ESPECIALES</p>
+    <h2>Eventos importantes</h2>
+    <p>Fiestas, campamentos, festivales y otros momentos especiales para encontrarnos y compartir.</p>
+  </div>
+  <div id="importantEventsGrid" class="important-events-grid"></div>
+</section>
+
+  <section class="content-section discovery-section" id="descubre">
+    <p class="eyebrow">Conoce nuestra escuela</p>
+    <div class="section-head">
+      <div><h2>Áreas donde puedes ser parte.</h2><p>Explora y descubre, cada espacio puede abrir una nueva forma de aprender, compartir y participar.</p></div>
+    </div>
+    <div class="discover-block teams-block">
+      <div class="discover-heading"><span>01</span><div><h3>Conoce las áreas</h3><p>Descubre a las personas y áreas que hacen posible cada encuentro, actividad y proyecto.</p></div></div>
+      <div class="cards-grid" id="serviceSpacesGrid"></div>
+    </div>
+  </section>
+
+  <section class="content-section virtue-section" id="virtudes">
+    <p class="eyebrow">EXPLORADOR DE VIRTUDES</p>
+    <h2>¿Qué quieres cultivar en ti?</h2>
+    <p>Elige una virtud y descubre espacios donde podrás ponerla en práctica.</p>
+    <div class="virtue-search"><input id="virtueInput" placeholder="Escribe una virtud: valor, disciplina, servicio..."><button id="virtueBtn">Buscar</button></div>
+    <div class="virtue-chips" id="virtueChips"></div>
+    <div id="virtueResults"></div>
+  </section>
+<section class="content-section" id="sedes">
+  <div class="section-wrap">
+    <p class="section-kicker">NUESTRAS SEDES</p>
+    <h2 class="section-title">Encuentra tu camino</h2>
+    <p class="section-intro">Consulta la dirección y abre la ubicación exacta en Google Maps.</p>
+    <div class="venue-grid" id="venueGrid"></div>
+  </div></section>
+</main>
+
+<div class="modal" id="detailModal" aria-hidden="true">
+  <div class="modal-backdrop" data-close></div>
+  <article class="modal-card">
+    <button class="modal-close" data-close aria-label="Cerrar">×</button>
+    <div id="modalContent"></div>
+  </article>
+</div>
+
+<nav class="mobile-nav">
+  <a href="#inicio">⌂<span>Inicio</span></a><a href="#agenda">▦<span>Agenda</span></a>
+  <a href="#explorar">◇<span>Explorar</span></a><a href="#virtudes">✦<span>Virtudes</span></a>
+</nav>
+
+
+<section class="social-section" id="redes-sociales">
+  <div class="section-wrap social-inner">
+    <div>
+      <p class="section-kicker">SIGAMOS EN CONTACTO</p>
+      <h2>No te olvides de seguirnos</h2>
+      <p>Conoce las actividades, encuentros y novedades de Nueva Acrópolis Huancayo también en nuestras redes sociales.</p>
+    </div>
+    <div class="social-links">
+      <a href="https://www.facebook.com/acropolisperu.huancayo" target="_blank" rel="noopener"><span>Facebook</span><b>Nueva Acrópolis Huancayo →</b></a>
+      <a href="https://www.instagram.com/nuevaacropolis.huancayo/" target="_blank" rel="noopener"><span>Instagram</span><b>@nuevaacropolis.huancayo →</b></a>
+    </div>
+  </div>
+</section>
+
+<footer>NUEVA ACRÓPOLIS · HUANCAYO <em>Filosofía para una vida mejor</em></footer>
+
+<script src="data/sedes.js"></script>
+<script src="data/agenda.js"></script>
+<script src="data/espacios.js"></script>
+<script src="data/eventos-importantes.js"></script>
+  <script src="data/galeria.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

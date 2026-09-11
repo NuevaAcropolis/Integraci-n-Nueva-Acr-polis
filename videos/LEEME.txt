@@ -1,0 +1,14 @@
+VIDEOS OPCIONALES
+
+Puedes guardar aquí videos MP4, por ejemplo:
+  videos/teatro-presentacion.mp4
+
+Luego, en el taller, área o evento correspondiente, agrega:
+  video:"videos/teatro-presentacion.mp4",
+  videoTitulo:"Mira un poco de nuestro taller",
+
+También puedes usar un enlace de YouTube:
+  video:"https://www.youtube.com/watch?v=XXXXXXXXXXX",
+  videoTitulo:"Conoce nuestra experiencia",
+
+Si no colocas la propiedad video, la sección no aparece.
