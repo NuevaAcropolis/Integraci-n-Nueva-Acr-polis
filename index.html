@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#1f4738">
   <title>Nueva Acrópolis Huancayo</title>
+  <link rel="icon" type="image/png" href="img/favicon.png">
+  <link rel="apple-touch-icon" href="img/favicon-180.png">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,8 +15,8 @@
   <button class="menu-btn" id="menuBtn" aria-label="Abrir menú">☰</button>
   <nav id="nav">
     <a href="#inicio">Inicio</a><a href="#agenda">Agenda</a>
-    <a href="#explorar">Explora</a><a href="#virtudes">Virtudes</a>
-    <a href="#sedes">Sedes</a>
+    <a href="#explorar">Explora</a><a href="#descubre">Áreas</a><a href="#virtudes">Virtudes</a>
+    <a href="#eventos-importantes">Eventos especiales</a><a href="#lecturas">Lecturas</a><a href="#asesorias">Asesorías</a><a href="#donaciones">Donaciones</a><a href="#sedes">Sedes</a>
   </nav>
 </header>
 
@@ -87,7 +89,7 @@
 <section class="important-events-section" id="eventos-importantes">
   <div class="important-events-heading">
     <p class="eyebrow">ENCUENTROS ESPECIALES</p>
-    <h2>Eventos importantes</h2>
+    <h2>Eventos especiales</h2>
     <p>Fiestas, campamentos, festivales y otros momentos especiales para encontrarnos y compartir.</p>
   </div>
   <div id="importantEventsGrid" class="important-events-grid"></div>
@@ -112,6 +114,35 @@
     <div class="virtue-chips" id="virtueChips"></div>
     <div id="virtueResults"></div>
   </section>
+
+<section class="content-section readings-section" id="lecturas">
+  <p class="eyebrow">UN MOMENTO PARA LEER</p>
+  <h2>Pequeñas lecturas para el alma</h2>
+  <p>Ideas breves para detenernos, pensar y llevar la filosofía a la vida cotidiana.</p>
+  <div class="reading-toolbar"><input id="readingSearch" placeholder="Buscar por título, autor, tema o virtud…"></div>
+  <div class="reading-grid" id="readingGrid"></div>
+</section>
+
+<section class="content-section counseling-section" id="asesorias">
+  <p class="eyebrow">UN ESPACIO PARA CONVERSAR</p>
+  <h2>Asesorías filosóficas</h2>
+  <p>Elige un instructor y encuentra un momento para conversar, reflexionar y ordenar ideas desde una mirada filosófica.</p>
+  <p class="counseling-note">Este espacio es de orientación y diálogo filosófico; no reemplaza atención médica o psicológica.</p>
+  <div class="instructor-tools"><input id="instructorSearch" type="search" placeholder="Buscar instructor por nombre…" aria-label="Buscar instructor"></div><div class="instructor-grid" id="instructorGrid"><div class="soft-empty">Cargando instructores y horarios…</div></div>
+</section>
+
+<section class="content-section donations-section" id="donaciones">
+  <p class="eyebrow">SERVICIO EN LO COTIDIANO</p>
+  <h2>Donaciones: pequeñas acciones, grandes cambios.</h2>
+  <p>Cuidar nuestra escuela también es una forma de servicio. Puedes colaborar con alguno de estos materiales.</p>
+  <div class="donation-summary"><span>Elige un material</span><strong>y coordina tu aporte directamente por WhatsApp</strong></div><div class="donation-grid" id="donationGrid"></div>
+  <div class="donation-contact"><a class="primary-btn" target="_blank" rel="noopener" href="https://wa.me/51964212747?text=Hola%20Michael%2C%20vi%20la%20secci%C3%B3n%20de%20Donaciones%20en%20la%20p%C3%A1gina%20de%20Nueva%20Acr%C3%B3polis%20y%20me%20gustar%C3%ADa%20colaborar.%20%C2%BFQu%C3%A9%20materiales%20necesitan%20con%20mayor%20prioridad%3F">Quiero colaborar →</a></div>
+</section>
+
+<section class="content-section qr-section" id="compartir">
+  <div class="qr-card"><img src="img/qr-integracion.png" alt="Código QR de la página de Integración"><div><p class="eyebrow">COMPARTE ESTE ESPACIO</p><h2>Filosofía que llega a más personas</h2><p>Escanea o comparte este QR para volver fácilmente a la agenda, lecturas y espacios de participación.</p></div></div>
+</section>
+
 <section class="content-section" id="sedes">
   <div class="section-wrap">
     <p class="section-kicker">NUESTRAS SEDES</p>
@@ -131,7 +162,7 @@
 
 <nav class="mobile-nav">
   <a href="#inicio">⌂<span>Inicio</span></a><a href="#agenda">▦<span>Agenda</span></a>
-  <a href="#explorar">◇<span>Explorar</span></a><a href="#virtudes">✦<span>Virtudes</span></a>
+  <a href="#explorar">◇<span>Explorar</span></a><a href="#lecturas">▤<span>Lecturas</span></a>
 </nav>
 
 
@@ -149,13 +180,20 @@
   </div>
 </section>
 
-<footer>NUEVA ACRÓPOLIS · HUANCAYO <em>Filosofía para una vida mejor</em></footer>
+<footer>NUEVA ACRÓPOLIS · HUANCAYO <em>Filosofía para una vida mejor</em><a class="admin-entry" href="admin.html">Administración</a></footer>
 
 <script src="data/sedes.js"></script>
 <script src="data/agenda.js"></script>
 <script src="data/espacios.js"></script>
 <script src="data/eventos-importantes.js"></script>
   <script src="data/galeria.js"></script>
+  <script src="data/lecturas.js"></script>
+  <script src="data/donaciones-fallback.js"></script>
+<script src="agenda-export-images.js"></script>
   <script src="script.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="na-supabase.js"></script>
+  <script src="asesorias-supabase.js"></script>
+  <script src="v33.js"></script>
 </body>
 </html>
