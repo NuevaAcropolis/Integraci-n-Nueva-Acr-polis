@@ -1,0 +1,7 @@
+V37H · Personas y permisos
+- Añade módulo privado Personas y permisos para administradores.
+- Permite crear/editar persona con correo y WhatsApp opcionales.
+- Permite asignar múltiples responsabilidades.
+- Permite activar/desactivar personas.
+- El botón Enviar acceso queda intencionalmente deshabilitado hasta implementar invitación segura en backend.
+- Conserva V37G/V37F y toda la funcionalidad pública ya aprobada.

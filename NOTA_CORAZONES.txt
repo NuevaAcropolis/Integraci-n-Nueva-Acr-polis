@@ -1,0 +1,8 @@
+CORAZONES EN MOMENTOS COMPARTIDOS
+
+En esta versión el corazón funciona en cada navegador/dispositivo y queda recordado localmente.
+Esto permite probar la experiencia sin cuentas ni costo.
+
+Cuando la página se publique en GitHub Pages, si deseas que TODAS las personas vean el mismo contador acumulado, habrá que conectar esta función a una base de datos online (por ejemplo Supabase o Firebase).
+
+La galería conserva una sola foto protagonista, flechas, deslizamiento táctil, indicador de posición y pantalla completa.

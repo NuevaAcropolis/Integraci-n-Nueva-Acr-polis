@@ -1,0 +1,21 @@
+V33 PREPARADA SOBRE LA V32 APROBADA
+
+Incluye:
+- descarga de la agenda visible como PNG (html2canvas)
+- favicon oficial
+- QR de la página pública
+- significado visible al elegir una virtud
+- sección Pequeñas lecturas con lector tipo librito
+- sección Asesorías filosóficas preparada para Supabase
+- sección Donaciones
+- panel de Administración y recuperación de contraseña preparado
+- carpeta img/lecturas para portadas permanentes en GitHub
+- contacto de Técnica corregido a Joel · 941 540 146
+
+PENDIENTE PARA ACTIVAR SUPABASE:
+1. Copiar la Publishable/anon key del proyecto en supabase-config.js.
+2. Conectar módulos dinámicos con las tablas ya creadas.
+3. Configurar Redirect URL de admin.html en Authentication > URL Configuration.
+4. Configurar notificaciones/Google Calendar/WhatsApp con servicios autorizados.
+
+NUNCA colocar service_role o la contraseña de base de datos en GitHub.

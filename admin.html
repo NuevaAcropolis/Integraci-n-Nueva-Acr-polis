@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Acceso privado · Nueva Acrópolis Huancayo</title>
+<link rel="icon" href="img/favicon.png"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+<main class="admin-shell">
+<section class="admin-login" id="authCard">
+<img src="img/logo-nueva-acropolis.png" alt="Nueva Acrópolis">
+<p class="eyebrow">ACCESO PRIVADO</p>
+<h1 id="authTitle">Panel de gestión</h1>
+<p id="authIntro">Acceso para personas autorizadas de Nueva Acrópolis Huancayo.</p>
+
+<form id="loginForm">
+<label>Correo<input id="loginEmail" type="email" required autocomplete="email"></label>
+<label>Contraseña<input id="loginPassword" type="password" required autocomplete="current-password"></label>
+<button class="primary-btn" type="submit">Iniciar sesión</button>
+</form>
+
+<form id="passwordForm" hidden>
+<div class="welcome-note"><strong>¡Bienvenida/o!</strong><span>Para completar tu acceso, crea una contraseña personal. Solo tú debes conocerla.</span></div>
+<label>Nueva contraseña<input id="newPassword" type="password" minlength="8" required autocomplete="new-password"></label>
+<label>Repite la contraseña<input id="repeatPassword" type="password" minlength="8" required autocomplete="new-password"></label>
+<button class="primary-btn" type="submit">Guardar contraseña y continuar</button>
+</form>
+
+<button class="text-btn" id="recoverBtn" type="button">Crear o recuperar contraseña</button>
+<p id="authMsg" class="auth-msg" aria-live="polite"></p>
+<a href="index.html">← Volver a la página</a>
+</section>
+
+<section class="admin-panel" id="adminPanel" hidden>
+<div class="admin-head"><div><p class="eyebrow">NUEVA ACRÓPOLIS HUANCAYO</p><h1>Panel de gestión</h1><p id="sessionLabel"></p></div><button id="logoutBtn">Cerrar sesión</button></div>
+<div class="admin-modules">
+<article><h3>Agenda y talleres</h3><p>Horarios, responsables y cancelaciones.</p></article>
+<article><h3>Asesorías</h3><p>Disponibilidad, bloqueos, reservas y solicitudes.</p></article>
+<article><h3>Eventos especiales</h3><p>Crear, ocultar o actualizar eventos ocasionales.</p></article>
+<article><h3>Donaciones</h3><p>Actualizar necesidades y materiales conseguidos.</p></article>
+<article><h3>Pequeñas lecturas</h3><p>Publicar y administrar lecturas filosóficas.</p></article>
+<article id="peopleShortcut"><h3>Personas y permisos</h3><p>Administradores, instructores y responsables autorizados.</p></article>
+</div>
+<p class="admin-dev-note">Los módulos visibles se ajustarán a los permisos de cada cuenta.</p>
+<section class="people-module" id="peopleModule" hidden>
+  <div class="people-toolbar">
+    <div><p class="eyebrow">ADMINISTRACIÓN</p><h2>Personas y permisos</h2><p>Registra personas, asigna responsabilidades y prepara su acceso al panel.</p></div>
+    <button class="primary-btn" id="addPersonBtn" type="button">+ Agregar persona</button>
+  </div>
+  <div class="people-notice">Puedes registrar a alguien aunque todavía no tengas su correo. El acceso se enviará más adelante, cuando tenga correo y la función segura de invitaciones esté activa.</div>
+  <div class="people-list" id="peopleList"><p class="admin-dev-note">Cargando personas…</p></div>
+</section>
+
+<div class="person-modal" id="personModal" hidden>
+ <div class="person-dialog" role="dialog" aria-modal="true" aria-labelledby="personTitle">
+  <button class="person-close" id="personClose" type="button" aria-label="Cerrar">×</button>
+  <p class="eyebrow">PERSONAS Y PERMISOS</p><h2 id="personTitle">Agregar persona</h2>
+  <form id="personForm">
+   <input type="hidden" id="personId">
+   <label>Nombre y apellido<input id="personName" required minlength="3"></label>
+   <div class="person-two"><label>Correo <span>(opcional)</span><input id="personEmail" type="email"></label><label>WhatsApp <span>(opcional)</span><input id="personWhatsapp" inputmode="tel"></label></div>
+   <fieldset><legend>Responsabilidades</legend><div class="role-grid" id="roleGrid"></div></fieldset>
+   <label class="active-check"><input id="personActive" type="checkbox" checked> Persona activa</label>
+   <div class="person-actions"><button class="primary-btn" type="submit">Guardar persona</button><button class="secondary-btn" id="cancelPerson" type="button">Cancelar</button></div>
+   <p class="auth-msg" id="personMsg" aria-live="polite"></p>
+  </form>
+ </div>
+</div>
+
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="admin.js"></script>
+</body></html>

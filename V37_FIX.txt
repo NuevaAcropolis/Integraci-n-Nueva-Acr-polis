@@ -1,0 +1,1 @@
+Corrección de conexión Supabase: las nuevas claves sb_publishable_ son API keys opacas y se envían mediante el header apikey. Se retiró el uso de la publishable key como Authorization Bearer. Se añadió diagnóstico temporal en Asesorías si una consulta falla.

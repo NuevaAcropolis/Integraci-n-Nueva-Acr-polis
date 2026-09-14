@@ -23,7 +23,15 @@ function generate(start,end){
  });
  return out.sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.hora||"").localeCompare(b.hora||""))
 }
-function activityImg(a){return `img/actividades/${a.foto||a.id+"-1.jpg"}`}
+function activityImg(a){
+ if(!a.foto)return "";
+ if(/^https?:\/\//i.test(a.foto))return a.foto;
+ return `img/actividades/${a.foto}`;
+}
+function autoCover(a){
+ const title=(a.nombre||"Actividad").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+ return `<div class="event-img auto-activity-cover"><span>NUEVA ACRÓPOLIS</span><b>${title}</b><i>FILOSOFÍA · CULTURA · VOLUNTARIADO</i></div>`;
+}
 function nextDate(id){
  const a=ACTIVIDADES_RECURRENTES.find(x=>x.id===id);if(!a)return"";
  const start=new Date();start.setHours(12,0,0,0);
@@ -43,7 +51,7 @@ function eventHTML(a){
  }
  const s=SEDES[a.sede]||{clase:"san-carlos"};
  return `<button class="event-card" data-event="${a.id}" data-date="${a.fecha}">
- <div class="event-img" style="background-image:url('${activityImg(a)}')"></div>
+ ${activityImg(a)?`<div class="event-img" style="background-image:url('${activityImg(a)}')"></div>`:autoCover(a)}
  <div class="event-body"><div class="event-time">${fmtTime(a.hora)}</div><div class="event-name">${a.nombre}</div>
  <div class="venue-tag"><span class="dot ${s.clase}"></span>${a.sede} ›</div></div></button>`
 }

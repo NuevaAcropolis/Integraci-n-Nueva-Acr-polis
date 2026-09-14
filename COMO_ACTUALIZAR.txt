@@ -1,0 +1,101 @@
+GUÍA RÁPIDA — V6
+
+FOTOGRAFÍAS DE TALLERES
+Cada taller ya tiene 3 espacios preparados:
+img/actividades/nombre-1.jpg
+img/actividades/nombre-2.jpg
+img/actividades/nombre-3.jpg
+
+Ejemplo Marinera:
+marinera-1.jpg
+marinera-2.jpg
+marinera-3.jpg
+
+Para cambiarlas, reemplaza esos archivos por tus fotografías conservando exactamente el mismo nombre.
+No necesitas tocar el código.
+
+FOTOGRAFÍAS DE ÁREAS
+Cada área también tiene 3 espacios:
+img/espacios/integracion-1.jpg
+img/espacios/integracion-2.jpg
+img/espacios/integracion-3.jpg
+
+Y lo mismo para:
+tecnica, difusion, cafeteria, redes, cultura,
+escolastica-prob y escolastica-miembros.
+
+FORMATO RECOMENDADO
+Puedes usar fotos horizontales o verticales.
+La web las recorta automáticamente con object-fit/background cover para computadora y celular.
+Para mejor calidad: JPG o WEBP de al menos 1200 px en su lado mayor.
+
+AGENDA
+Edita solamente data/agenda.js.
+- dias:[1] = lunes ... dias:[7] = domingo
+- desde / hasta = periodo durante el cual se repite
+- canceladas:["2026-10-05"] = cancela solo esa fecha
+- SEMANAS_SIN_ACTIVIDADES = permite mostrar que una semana no habrá talleres/círculos
+
+VIRTUDES
+Las virtudes están en data/agenda.js y data/espacios.js.
+Al escribir una virtud, la página ordena automáticamente los espacios más relacionados.
+
+UBICACIONES
+Los enlaces de Google Maps están en data/sedes.js.
+
+
+CONTACTOS DE LAS ÁREAS
+En data/espacios.js cada área tiene ahora:
+encargado:""
+whatsapp:""
+
+Ejemplo:
+encargado:"Scarlet",whatsapp:"519XXXXXXXX"
+
+Escribe el nombre y el número SIN +, espacios ni guiones.
+Al hacerlo aparecerá automáticamente el botón "Quiero conocer más" con un mensaje personalizado,
+igual que en los talleres.
+
+Si todavía no colocas un contacto, la página no inventará ninguno y mostrará que el contacto estará disponible próximamente.
+
+
+EVENTOS IMPORTANTES
+Se editan en: data/eventos-importantes.js
+Las imágenes van en: img/eventos/
+
+Puedes agregar fiestas, campamentos, festivales, aniversarios y otros encuentros puntuales.
+Estos eventos NO se repiten como los talleres semanales.
+Copia uno de los bloques del archivo, cambia fecha, hora, sede, descripción y foto.
+
+
+VIDEOS
+Puedes agregar un video opcional a un taller, área o evento.
+1. Guarda el MP4 dentro de la carpeta videos.
+2. En el elemento correspondiente agrega:
+   video:"videos/mi-video.mp4",
+   videoTitulo:"Mira un poco de esta experiencia",
+
+También puedes pegar un enlace de YouTube en video.
+Si dejas video sin definir, no aparece ningún espacio vacío.
+
+
+GALERÍA — NUESTROS IDEALES
+La galería está pensada para fotografías libres de actividades de la escuela:
+fraternidad, conocimiento, servicio, convivencia, talleres, voluntariado, campamentos, etc.
+
+1. Guarda las fotos en:
+   img/galeria/
+
+2. Abre:
+   data/galeria.js
+
+3. Agrega únicamente los nombres:
+   const GALERIA = [
+     "foto-01.jpg",
+     "foto-02.jpg",
+     "foto-03.jpg"
+   ];
+
+No necesitas título ni descripción.
+Las fotografías se acomodan automáticamente y se pueden abrir completas.
+En el visor puedes pasar a la anterior/siguiente.

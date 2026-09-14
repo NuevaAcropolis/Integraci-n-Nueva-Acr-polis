@@ -1,0 +1,12 @@
+CÓMO AGREGAR MÁS FOTOS A MOMENTOS COMPARTIDOS
+
+1. Copia la nueva fotografía dentro de: img/galeria/
+2. Ponle un nombre simple, por ejemplo: momento-41.jpg
+3. Abre data/galeria.js con Bloc de notas.
+4. Antes de la línea ]; agrega:
+   "momento-41.jpg",
+5. Guarda el archivo.
+
+No necesitas modificar index.html, script.js ni style.css.
+La foto aparecerá automáticamente en la cinta horizontal.
+Puedes seguir con momento-42.jpg, momento-43.jpg, etc.

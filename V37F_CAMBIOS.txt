@@ -1,0 +1,4 @@
+V37F
+- Agenda PNG: ya no depende de html2canvas/CDN; usa generador Canvas propio y funciona desde file://.
+- Instructores: 3 por fila en escritorio, 2 en tablet, 1 en móvil.
+- Foto más protagonista y buscador por nombre para escalar a muchos instructores.
