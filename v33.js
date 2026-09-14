@@ -28,34 +28,52 @@
    const original=download.textContent;download.disabled=true;download.textContent="Preparando imagen…";
    try{
      const monday=mondayOf(addDays(new Date(),weekOffset*7)), sunday=addDays(monday,6), days=Array.from({length:7},(_,i)=>addDays(monday,i));
-     const occ=generate(monday,sunday); const W=1500, pad=55, gap=14, col=(W-pad*2-gap*6)/7;
+     const occ=generate(monday,sunday); const W=1600, pad=54, gap=14, col=(W-pad*2-gap*6)/7;
      const perDay=days.map(d=>occ.filter(a=>a.fecha===iso(d))); const maxN=Math.max(1,...perDay.map(x=>x.length));
-     const cardH=190, headerH=205, H=headerH+maxN*(cardH+14)+75;
+     const cardH=136, cardGap=12, headerH=230, legendH=110, H=headerH+maxN*(cardH+cardGap)+legendH;
      const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
      ctx.fillStyle='#f7f3eb';ctx.fillRect(0,0,W,H);
-     ctx.fillStyle='#173f34';ctx.font='700 18px Inter, Arial';ctx.fillText('NUEVA ACRÓPOLIS · HUANCAYO',pad,48);
-     ctx.font='500 50px Georgia, serif';ctx.fillText('Agenda semanal',pad,105);
-     ctx.font='400 20px Inter, Arial';ctx.fillStyle='#6f685d';ctx.fillText(`${monday.getDate()} – ${sunday.getDate()} de ${MONTHS[sunday.getMonth()]} de ${sunday.getFullYear()}`,pad,143);
-     ctx.strokeStyle='#cdbb92';ctx.beginPath();ctx.moveTo(pad,165);ctx.lineTo(W-pad,165);ctx.stroke();
-     const exportImages=window.NA_AGENDA_EXPORT_IMAGES||{};
+     ctx.fillStyle='#173f34';ctx.font='700 20px Inter, Arial';ctx.fillText('NUEVA ACRÓPOLIS · HUANCAYO',pad,48);
+     ctx.font='500 52px Georgia, serif';ctx.fillText('Agenda semanal',pad,108);
+     ctx.font='400 21px Inter, Arial';ctx.fillStyle='#6f685d';ctx.fillText(`${monday.getDate()} – ${sunday.getDate()} de ${MONTHS[sunday.getMonth()]} de ${sunday.getFullYear()}`,pad,146);
+     ctx.strokeStyle='#cdbb92';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(pad,168);ctx.lineTo(W-pad,168);ctx.stroke();
+
+     const sedeStyle=sede=>{
+       const n=normalize(sede||'');
+       if(n.includes('tambo')) return {bg:'#e8b657',border:'#d39a31',text:'#173f34',label:'EL TAMBO'};
+       if(n.includes('sumar')) return {bg:'#adc9b0',border:'#8eaf92',text:'#173f34',label:'JULIO SUMAR'};
+       return {bg:'#ebe9e4',border:'#d4d0c7',text:'#173f34',label:'SAN CARLOS'};
+     };
+     const fitLines=(text,maxWidth,maxLines=3)=>{
+       let size=22, lines=[];
+       while(size>=16){ctx.font=`700 ${size}px Georgia, serif`;lines=wrapCanvas(ctx,text,maxWidth);if(lines.length<=maxLines)break;size-=1}
+       if(lines.length>maxLines){lines=lines.slice(0,maxLines);let last=lines[maxLines-1];while(last.length>2&&ctx.measureText(last+'…').width>maxWidth)last=last.slice(0,-1);lines[maxLines-1]=last+'…'}
+       return {size,lines};
+     };
+
      for(let di=0;di<7;di++){
        const d=days[di], x=pad+di*(col+gap), items=perDay[di];
-       ctx.fillStyle='#173f34';ctx.font='700 16px Georgia, serif';ctx.fillText(['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO'][di],x,195);
-       ctx.fillStyle='#8b8171';ctx.font='400 12px Inter, Arial';ctx.fillText(`${d.getDate()} de ${MONTHS[d.getMonth()]}`,x,216);
+       // Encabezado institucional del día
+       ctx.fillStyle='#173f34';ctx.strokeStyle='#173f34';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(x,184,col,42,9);ctx.fill();
+       ctx.fillStyle='#fffdf8';ctx.font='700 20px Georgia, serif';ctx.textAlign='center';ctx.fillText(['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO'][di],x+col/2,211);ctx.textAlign='left';
+       // Fecha más visible debajo del día
+       ctx.fillStyle='#514b42';ctx.font='600 16px Inter, Arial';ctx.fillText(`${d.getDate()} de ${MONTHS[d.getMonth()]}`,x,248);
        for(let j=0;j<items.length;j++){
-         const a=items[j], y=235+j*(cardH+14);
-         ctx.fillStyle='#fffdf8';ctx.strokeStyle='#ded3c0';rounded(ctx,x,y,col,cardH,12);
-         let src=''; try{const raw=activityImg(a)||'';const name=raw.split(/[?#]/)[0].replace(/\\/g,'/').split('/').pop();src=exportImages[name]||raw}catch(e){}
-         const im=await loadDataImage(src);
-         if(im){ctx.save();ctx.beginPath();ctx.roundRect(x+1,y+1,col-2,78,[11,11,0,0]);ctx.clip();const sc=Math.max(col/im.width,78/im.height),dw=im.width*sc,dh=im.height*sc;ctx.drawImage(im,x+(col-dw)/2,y+(78-dh)/2,dw,dh);ctx.restore()}
-         else {ctx.fillStyle='#e8e1d3';ctx.fillRect(x+1,y+1,col-2,78)}
-         ctx.fillStyle='#173f34';ctx.font='600 13px Inter, Arial';ctx.fillText(fmtTime(a.hora),x+12,y+101);
-         ctx.font='600 20px Georgia, serif';const lines=wrapCanvas(ctx,a.nombre,col-24).slice(0,3);lines.forEach((ln,k)=>ctx.fillText(ln,x+12,y+128+k*22));
-         ctx.fillStyle='#557164';ctx.font='500 11px Inter, Arial';ctx.fillText(`● ${a.sede}`,x+12,y+cardH-12);
+         const a=items[j], y=264+j*(cardH+cardGap), st=sedeStyle(a.sede);
+         ctx.fillStyle=st.bg;ctx.strokeStyle=st.border;ctx.lineWidth=1.3;rounded(ctx,x,y,col,cardH,12);
+         ctx.fillStyle=st.text;ctx.font='700 16px Inter, Arial';ctx.fillText(fmtTime(a.hora),x+13,y+25);
+         const fitted=fitLines(a.nombre,col-26,3);ctx.font=`700 ${fitted.size}px Georgia, serif`;
+         fitted.lines.forEach((ln,k)=>ctx.fillText(ln,x+13,y+53+k*(fitted.size+2)));
+         ctx.font='700 12px Inter, Arial';ctx.globalAlpha=.82;ctx.fillText(st.label,x+13,y+cardH-13);ctx.globalAlpha=1;
        }
-       if(!items.length){ctx.fillStyle='#aaa095';ctx.font='italic 14px Georgia, serif';ctx.fillText('Sin actividades',x,260)}
+       if(!items.length){ctx.fillStyle='#aaa095';ctx.font='italic 15px Georgia, serif';ctx.fillText('Sin actividades',x,292)}
      }
-     ctx.fillStyle='#9a742b';ctx.font='600 12px Inter, Arial';ctx.textAlign='center';ctx.fillText('FILOSOFÍA · CULTURA · VOLUNTARIADO',W/2,H-28);ctx.textAlign='left';
+
+     const ly=H-66;ctx.strokeStyle='#d8ccb5';ctx.beginPath();ctx.moveTo(pad,ly-22);ctx.lineTo(W-pad,ly-22);ctx.stroke();
+     const legend=[['#ebe9e4','#d4d0c7','SAN CARLOS'],['#e8b657','#d39a31','EL TAMBO'],['#adc9b0','#8eaf92','JULIO SUMAR']];
+     let lx=pad;ctx.font='700 13px Inter, Arial';
+     legend.forEach(([bg,border,label])=>{ctx.fillStyle=bg;ctx.strokeStyle=border;ctx.beginPath();ctx.roundRect(lx,ly,22,22,5);ctx.fill();ctx.stroke();ctx.fillStyle='#173f34';ctx.fillText(label,lx+31,ly+16);lx+=150;});
+     ctx.fillStyle='#9a742b';ctx.font='600 12px Inter, Arial';ctx.textAlign='right';ctx.fillText('FILOSOFÍA · CULTURA · VOLUNTARIADO',W-pad,ly+16);ctx.textAlign='left';
      const a=document.createElement('a');a.download=`agenda-nueva-acropolis-${iso(monday)}.png`;a.href=canvas.toDataURL('image/png');document.body.appendChild(a);a.click();a.remove();
    }catch(err){alert('No pude generar la imagen. Inténtalo nuevamente.');console.error('Agenda PNG:',err)}
    finally{download.disabled=false;download.textContent=original}
