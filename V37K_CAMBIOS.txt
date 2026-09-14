@@ -1,0 +1,11 @@
+V37K · Agenda descargable adaptativa
+
+- Mantiene 7 columnas.
+- Días de la semana sobre verde institucional.
+- Fecha debajo de cada día más grande y oscura.
+- Nombre de sede dentro de cada tarjeta más grande.
+- Tarjetas con espacio reservado para títulos largos y sede.
+- La altura del PNG crece automáticamente según el día con más actividades (incluye 6 o más).
+- La línea inferior y la leyenda siempre quedan debajo de la última fila, con margen.
+- Colores por sede: San Carlos, El Tambo y Julio Sumar.
+- No modifica la estética de la agenda visible en la web; solo la imagen descargable.
