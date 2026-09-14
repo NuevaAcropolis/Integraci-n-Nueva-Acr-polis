@@ -1,0 +1,3 @@
+const LECTURAS_FALLBACK = [
+ {id:"ejemplo-1",titulo:"La fuerza de comenzar",autor:"Integración",tema:"Vida cotidiana",virtud:"Voluntad",contenido:`A veces esperamos sentirnos completamente preparados antes de comenzar. Sin embargo, muchas de las cosas que transforman nuestra vida empiezan con un gesto pequeño.\n\nLa voluntad no siempre aparece como una fuerza extraordinaria. Puede expresarse al levantarnos a la hora acordada, cumplir una palabra, volver a intentarlo o dedicar unos minutos a aquello que sabemos que nos hace mejores.\n\nCuando una acción pequeña se repite con conciencia, deja de ser solamente un esfuerzo: empieza a formar parte de nuestro carácter.`,pregunta_final:"¿Qué pequeña acción podrías comenzar hoy y sostener durante esta semana?",imagen:""}
+];
