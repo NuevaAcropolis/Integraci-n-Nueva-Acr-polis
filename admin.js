@@ -42,6 +42,7 @@
 
   if(!cfg.url||!cfg.anonKey||cfg.anonKey.includes('PEGAR_AQUI')){say('Falta conectar Supabase para activar el acceso.','error');return;}
   const sb=supabase.createClient(cfg.url,cfg.anonKey);
+  window.__naAdminSb=sb;
 
   form.onsubmit=async e=>{
     e.preventDefault(); say('Ingresando…');
@@ -108,11 +109,63 @@
         <div><div class="person-name">${esc(p.nombre_apellido)}</div><span class="status-chip ${p.activo?'':'off'}">${p.activo?'Activa':'Inactiva'}</span></div>
         <div class="person-contact">${p.correo?esc(p.correo):'<em>Sin correo todavía</em>'}<br>${p.whatsapp?'WhatsApp: '+esc(p.whatsapp):''}</div>
         <div class="role-chips">${roles.length?roles.map(r=>`<span class="role-chip">${esc(ROLE_LABELS[r]||r)}</span>`).join(''):'<span class="role-chip">Sin responsabilidades</span>'}</div>
-        <div class="person-row-actions"><button class="mini-btn" data-edit="${p.id}">Editar</button><button class="mini-btn" title="Se activará cuando conectemos la invitación segura" disabled>Enviar acceso</button></div>
+        <div class="person-row-actions"><button class="mini-btn" data-edit="${p.id}">Editar</button><button class="mini-btn" data-invite="${p.id}">${p.usuario_id?'Reenviar acceso':'Enviar acceso'}</button><button class="mini-btn danger-btn" data-delete-person="${p.id}">Eliminar</button></div>
       </div>`;
     }).join('');
-    peopleList.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openPerson(peopleCache.find(p=>p.id===Number(b.dataset.edit))));
+    peopleList.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openPerson(peopleCache.find(p=>String(p.id)===String(b.dataset.edit))));
+    peopleList.querySelectorAll('[data-invite]').forEach(b=>b.onclick=()=>invitePerson(b.dataset.invite,b));
+    peopleList.querySelectorAll('[data-delete-person]').forEach(b=>b.onclick=()=>deletePerson(b.dataset.deletePerson));
   }
+
+  async function deletePerson(id){
+    const p=peopleCache.find(x=>String(x.id)===String(id)); if(!p)return;
+    if(!confirm(`¿Eliminar a ${p.nombre_apellido}?
+
+Se quitarán sus responsabilidades y ya no tendrá acceso a los módulos asignados.`))return;
+    try{
+      // V38.16: la eliminación se hace mediante RPC segura; el navegador no toca roles_usuario directamente.
+      const rr=await sb.rpc('admin_eliminar_persona',{p_persona_id:Number(id)});
+      if(rr.error) throw rr.error;
+      await loadPeople();
+    }catch(e){alert('No se pudo eliminar: '+(e?.message||e));}
+  }
+
+  async function invitePerson(id,btn){
+    const p=peopleCache.find(x=>String(x.id)===String(id)); if(!p?.correo){alert('Primero agrega un correo a esta persona.');return;}
+    const old=btn.textContent; btn.disabled=true; btn.textContent='Enviando…';
+    try{
+      // Releer la fila directamente de Supabase antes de invitar para no depender del dataset del botón.
+      const fresh=await sb.from('personas').select('id,nombre_apellido,correo,activo').eq('id',p.id).maybeSingle();
+      if(fresh.error) throw fresh.error;
+      const persona=fresh.data||p;
+      const correo=String(persona.correo||p.correo||'').trim().toLowerCase();
+      if(!correo) throw new Error('Esta persona no tiene correo registrado.');
+      const roles=respCache.filter(r=>String(r.persona_id)===String(p.id)).map(r=>r.responsabilidad);
+      const {data,error}=await sb.functions.invoke('invitar-persona',{body:{persona_id:persona.id,correo:correo,email:correo,nombre_apellido:persona.nombre_apellido||p.nombre_apellido,roles}});
+      if(error) throw error;
+      if(data?.error) throw new Error(data.error);
+      alert(data?.message||'Invitación enviada.'); await loadPeople();
+    }catch(e){
+      let detalle=e?.message||String(e);
+      try{
+        if(e?.context){
+          const res=e.context;
+          const raw=await res.clone().text();
+          if(raw){
+            try{
+              const j=JSON.parse(raw);
+              detalle=j.error||j.message||raw;
+            }catch(_){ detalle=raw; }
+          }
+          if(res.status) detalle=`${detalle} (HTTP ${res.status})`;
+        }
+      }catch(_){ }
+      console.error('invitar-persona:',e);
+      alert('No se pudo enviar el acceso: '+detalle);
+    }
+    finally{btn.disabled=false;btn.textContent=old;}
+  }
+
   async function loadPeople(){
     peopleList.innerHTML='<p class="admin-dev-note">Cargando personas…</p>';
     const [a,b]=await Promise.all([
@@ -123,9 +176,33 @@
     peopleCache=a.data||[];respCache=b.data||[];renderPeople();
   }
   async function initPrivateModules(user){
-    const {data,error}=await sb.from('roles_usuario').select('rol').eq('usuario_id',user.id);
-    const roles=(data||[]).map(x=>x.rol);
-    canManagePeople=!error && roles.includes('administrador');
+    // V37L3: comprobación segura del rol sin depender del SELECT/RLS de roles_usuario.
+    const adminCheck=await sb.rpc('es_admin_actual');
+    const isAdmin=!adminCheck.error && adminCheck.data===true;
+    let roles=[];
+    if(!isAdmin){
+      // Leer los roles de la cuenta actual mediante RPC segura.
+      const r=await sb.rpc('mis_roles_actuales');
+      if(!r.error) roles=(r.data||[]).map(x=>typeof x==='string'?x:x.rol).filter(Boolean);
+    }
+    window.__naIsAdmin=isAdmin;
+    window.__naRoles=isAdmin?['administrador']:roles;
+    canManagePeople=isAdmin;
+    canManageAgenda=isAdmin || roles.includes('jefe_taller');
+
+    // Mostrar SOLO los módulos autorizados.
+    const visibility={
+      agendaShortcut: canManageAgenda,
+      adviceShortcut: isAdmin || roles.includes('instructor') || roles.includes('responsable_asesorias'),
+      eventsShortcut: isAdmin,
+      donationsShortcut: isAdmin || roles.includes('encargado_donaciones'),
+      readingsShortcut: isAdmin || roles.includes('encargado_lecturas'),
+      peopleShortcut: isAdmin
+    };
+    Object.entries(visibility).forEach(([id,ok])=>{const el=document.getElementById(id);if(el)el.hidden=!ok;});
+
+    if(agendaAdminModule) agendaAdminModule.hidden=!canManageAgenda;
+    if(canManageAgenda) await loadActivitiesAdmin();
     if(peopleModule) peopleModule.hidden=!canManagePeople;
     if(canManagePeople) await loadPeople();
   }
@@ -136,7 +213,7 @@
   personForm.onsubmit=async e=>{
     e.preventDefault(); if(!canManagePeople)return;
     const pm=document.querySelector('#personMsg'); pm.textContent='Guardando…'; pm.className='auth-msg';
-    const id=Number(document.querySelector('#personId').value)||null;
+    const id=document.querySelector('#personId').value.trim()||null;
     const payload={
       nombre_apellido:document.querySelector('#personName').value.trim(),
       correo:document.querySelector('#personEmail').value.trim()||null,
@@ -150,16 +227,51 @@
     else res=await sb.from('personas').insert(payload).select('id').single();
     if(res.error){pm.textContent='No pudimos guardar: '+res.error.message;pm.className='auth-msg error';return;}
     personId=res.data.id;
-    const del=await sb.from('responsabilidades_persona').delete().eq('persona_id',personId);
-    if(del.error){pm.textContent='La persona se guardó, pero no pudimos actualizar sus responsabilidades: '+del.error.message;pm.className='auth-msg error';return;}
-    if(selected.length){
-      const ins=await sb.from('responsabilidades_persona').insert(selected.map(responsabilidad=>({persona_id:personId,responsabilidad})));
-      if(ins.error){pm.textContent='La persona se guardó, pero faltaron responsabilidades: '+ins.error.message;pm.className='auth-msg error';return;}
+    // V38.22: una sola RPC guarda responsabilidades, vincula el correo con Auth y sincroniza roles.
+    // El navegador ya no escribe directamente en roles_usuario.
+    const sync=await sb.rpc('admin_guardar_responsabilidades_persona',{
+      p_persona_id:Number(personId),
+      p_roles:selected
+    });
+    if(sync.error){
+      pm.textContent='La persona se guardó, pero no pudimos actualizar sus permisos de acceso: '+sync.error.message;
+      pm.className='auth-msg error';
+      return;
     }
-    pm.textContent='Guardado correctamente ✓';pm.className='auth-msg success';
+    const linked=sync.data?.linked===true;
+    const savedPerson={correo:payload.correo};
+    pm.textContent=savedPerson?.correo?'Guardado y permisos actualizados ✓':'Guardado correctamente ✓';pm.className='auth-msg success';
     await loadPeople(); setTimeout(closePerson,650);
   };
   document.querySelector('#peopleShortcut').onclick=()=>{if(canManagePeople)peopleModule.scrollIntoView({behavior:'smooth'});};
+
+
+
+  // V37L · Agenda y talleres
+  const agendaAdminModule=document.querySelector('#agendaAdminModule'), activityAdminList=document.querySelector('#activityAdminList');
+  const activityModal=document.querySelector('#activityModal'), activityForm=document.querySelector('#activityForm');
+  const exceptionModal=document.querySelector('#exceptionModal'), exceptionForm=document.querySelector('#exceptionForm');
+  const DAY_NAMES=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  let canManageAgenda=false, activityCache=[];
+  function activityDayInputs(selected=[]){document.querySelector('#activityDays').innerHTML=DAY_NAMES.map((n,i)=>`<label class="day-check"><input type="checkbox" name="activityDays" value="${i+1}" ${selected.includes(i+1)?'checked':''}> ${n}</label>`).join('');}
+  function openActivityAdmin(a=null){activityForm.reset();document.querySelector('#activityId').value=a?.id||'';document.querySelector('#activityTitle').textContent=a?'Editar taller':'Nuevo taller';document.querySelector('#activityName').value=a?.nombre||'';document.querySelector('#activityVenue').value=a?.sede||'San Carlos';document.querySelector('#activityTime').value=(a?.hora||'18:00').slice(0,5);document.querySelector('#activityFrom').value=a?.desde||new Date().toISOString().slice(0,10);document.querySelector('#activityTo').value=a?.hasta||'2027-12-31';document.querySelector('#activityLead').value=a?.encargado||'';document.querySelector('#activityWhatsapp').value=a?.whatsapp||'';document.querySelector('#activityPhrase').value=a?.frase||'';document.querySelector('#activityPhoto').value=a?.foto||'';document.querySelector('#activityActive').checked=a?a.activo!==false:true;activityDayInputs(a?.dias||[]);document.querySelector('#activityFormMsg').textContent='';activityModal.hidden=false;}
+  function closeActivityAdmin(){activityModal.hidden=true;}
+  function slugify(v){return v.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,70);}
+  function renderActivityAdmin(){const q=(document.querySelector('#activitySearch').value||'').toLowerCase(), st=document.querySelector('#activityStatus').value;let rows=activityCache.filter(a=>(!q||a.nombre.toLowerCase().includes(q))&&(st==='all'||(st==='active'?a.activo!==false:a.activo===false)));if(!rows.length){activityAdminList.innerHTML='<div class="empty-people">No hay actividades con este filtro.</div>';return;}activityAdminList.innerHTML=rows.map(a=>`<div class="activity-admin-row"><div><div class="activity-admin-name">${esc(a.nombre)}</div><span class="status-chip ${a.activo?'':'off'}">${a.activo?'Activa':'Finalizada'}</span></div><div class="activity-admin-meta">${(a.dias||[]).map(d=>DAY_NAMES[d-1]).join(', ')||'Sin día'}<br><strong>${esc((a.hora||'').slice(0,5))}</strong></div><div class="activity-admin-meta">${esc(a.sede||'')}<br>${esc(a.desde||'')} → ${esc(a.hasta||'')}</div><div class="activity-admin-actions"><button class="mini-btn" data-aedit="${a.id}">Editar</button><button class="mini-btn" data-aexception="${a.id}">Una fecha</button><button class="mini-btn" data-atoggle="${a.id}">${a.activo?'Finalizar':'Reactivar'}</button></div></div>`).join('');activityAdminList.querySelectorAll('[data-aedit]').forEach(b=>b.onclick=()=>openActivityAdmin(activityCache.find(a=>a.id===Number(b.dataset.aedit))));activityAdminList.querySelectorAll('[data-aexception]').forEach(b=>b.onclick=()=>openException(activityCache.find(a=>a.id===Number(b.dataset.aexception))));activityAdminList.querySelectorAll('[data-atoggle]').forEach(b=>b.onclick=()=>toggleActivity(Number(b.dataset.atoggle)));}
+  async function loadActivitiesAdmin(){activityAdminList.innerHTML='<p class="admin-dev-note">Cargando agenda…</p>';const {data,error}=await sb.from('actividades').select('id,slug,nombre,dias,hora,sede,desde,hasta,encargado,whatsapp,foto,frase,activo').order('nombre');if(error){activityAdminList.innerHTML=`<div class="empty-people">No pudimos cargar la agenda.<br><small>${esc(error.message)}</small></div>`;return;}activityCache=data||[];renderActivityAdmin();}
+  async function toggleActivity(id){const a=activityCache.find(x=>x.id===id);if(!a)return;const {error}=await sb.from('actividades').update({activo:!a.activo}).eq('id',id);if(error){alert('No se pudo actualizar: '+error.message);return;}await loadActivitiesAdmin();}
+  function openException(a){exceptionForm.reset();document.querySelector('#exceptionActivityId').value=a.id;document.querySelector('#exceptionTitle').textContent=a.nombre;document.querySelector('#exceptionDate').value='';document.querySelector('#exceptionType').value='cancelar';document.querySelector('#newTimeWrap').hidden=true;document.querySelector('#exceptionMsg').textContent='';exceptionModal.hidden=false;}
+  function closeException(){exceptionModal.hidden=true;}
+  document.querySelector('#addActivityBtn').onclick=()=>openActivityAdmin();document.querySelector('#activityClose').onclick=closeActivityAdmin;document.querySelector('#cancelActivityEdit').onclick=closeActivityAdmin;activityModal.addEventListener('click',e=>{if(e.target===activityModal)closeActivityAdmin();});
+  document.querySelector('#exceptionClose').onclick=closeException;document.querySelector('#cancelException').onclick=closeException;exceptionModal.addEventListener('click',e=>{if(e.target===exceptionModal)closeException();});document.querySelector('#exceptionType').onchange=e=>document.querySelector('#newTimeWrap').hidden=e.target.value!=='cambiar_hora';document.querySelector('#activitySearch').oninput=renderActivityAdmin;document.querySelector('#activityStatus').onchange=renderActivityAdmin;
+  activityForm.onsubmit=async e=>{e.preventDefault();if(!canManageAgenda)return;const m=document.querySelector('#activityFormMsg'),id=Number(document.querySelector('#activityId').value)||null,days=[...activityForm.querySelectorAll('[name=activityDays]:checked')].map(x=>Number(x.value));if(!days.length){m.textContent='Selecciona al menos un día.';m.className='auth-msg error';return;}const name=document.querySelector('#activityName').value.trim();const payload={nombre:name,dias:days,hora:document.querySelector('#activityTime').value,sede:document.querySelector('#activityVenue').value,desde:document.querySelector('#activityFrom').value,hasta:document.querySelector('#activityTo').value,encargado:document.querySelector('#activityLead').value.trim()||null,whatsapp:document.querySelector('#activityWhatsapp').value.trim()||null,frase:document.querySelector('#activityPhrase').value.trim()||null,foto:document.querySelector('#activityPhoto').value.trim()||null,activo:document.querySelector('#activityActive').checked};if(!id)payload.slug=slugify(name)+'-'+Date.now().toString().slice(-5);m.textContent='Guardando…';let r=id?await sb.from('actividades').update(payload).eq('id',id):await sb.from('actividades').insert(payload);if(r.error){m.textContent='No pudimos guardar: '+r.error.message;m.className='auth-msg error';return;}m.textContent='Guardado correctamente ✓';m.className='auth-msg success';await loadActivitiesAdmin();setTimeout(closeActivityAdmin,600);};
+  exceptionForm.onsubmit=async e=>{e.preventDefault();if(!canManageAgenda)return;const m=document.querySelector('#exceptionMsg'),activity_id=Number(document.querySelector('#exceptionActivityId').value),fecha=document.querySelector('#exceptionDate').value,type=document.querySelector('#exceptionType').value;if(type==='cancelar'){const r=await sb.from('actividades_canceladas').upsert({actividad_id,fecha},{onConflict:'actividad_id,fecha'});if(r.error){m.textContent='No pudimos cancelar: '+r.error.message;m.className='auth-msg error';return;}}else{const hora=document.querySelector('#exceptionNewTime').value;if(!hora){m.textContent='Indica la nueva hora.';m.className='auth-msg error';return;}const r=await sb.from('actividad_excepciones').upsert({actividad_id,fecha,hora,note:document.querySelector('#exceptionNote').value.trim()||null},{onConflict:'actividad_id,fecha'});if(r.error){m.textContent='Falta activar la tabla de cambios especiales. Ejecuta el SQL incluido en V37L. Detalle: '+r.error.message;m.className='auth-msg error';return;}}m.textContent='Cambio guardado ✓';m.className='auth-msg success';setTimeout(closeException,600);};
+  document.querySelector('#agendaShortcut').onclick=async()=>{
+    if(!canManageAgenda){ alert('Tu cuenta inició sesión, pero aún no tiene permiso para gestionar la agenda.'); return; }
+    agendaAdminModule.hidden=false;
+    await loadActivitiesAdmin();
+    agendaAdminModule.scrollIntoView({behavior:'smooth',block:'start'});
+  };
 
   document.querySelector('#logoutBtn').onclick=async()=>{await sb.auth.signOut();showLoginMode();say('Sesión cerrada.','success');};
 
@@ -176,4 +288,48 @@
     const t=urlAuthType();
     if(t) showPasswordMode(t); else await showSession();
   },150);
+})();
+
+/* V38 · Gestor integral: Asesorías, Eventos, Donaciones y Lecturas */
+(function(){
+ const db=window.__naAdminSb;
+ // Reutiliza EXACTAMENTE la sesión autenticada del panel principal.
+ if(!db) return;
+ const $=s=>document.querySelector(s), esc2=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const manager=$('#contentManager'), list=$('#cmList'), modal=$('#cmModal'), fields=$('#cmFields'); let mode=null, rows=[], adviceAvailability=[];
+ const defs={
+  events:{title:'Eventos especiales',intro:'Crea, actualiza, publica u oculta eventos ocasionales.',table:'eventos',label:'evento',fields:[['titulo','Nombre','text',1],['tipo','Tipo','text'],['fecha','Fecha','date',1],['hora','Hora','time'],['sede','Sede','select','San Carlos|El Tambo|Julio Sumar'],['descripcion','Descripción breve','textarea'],['detalle','Información completa','textarea'],['modalidad_pago','Ingreso','select','Gratuito|De pago'],['costo','Costo (S/) · dejar vacío si es gratuito','number'],['solo_miembros','Solo para miembros','checkbox'],['foto','Imagen','file'],['whatsapp','WhatsApp de contacto (opcional)','text'],['activo','Publicado','checkbox']]},
+  donations:{title:'Donaciones',intro:'Administra necesidades, categorías y lo que ya fue conseguido.',table:'donaciones',label:'donación',fields:[['nombre','Material','text',1],['categoria','Categoría','select','Limpieza|Otros|Materiales'],['prioridad','Prioridad','number'],['conseguido','Conseguido','checkbox'],['activo','Visible','checkbox']]},
+  readings:{title:'Pequeñas lecturas',intro:'Publica y edita lecturas filosóficas desde el panel.',table:'lecturas',label:'lectura',fields:[['titulo','Título','text',1],['autor','Autor','text'],['tema','Tema','text'],['contenido','Texto completo','textarea',1],['pregunta_final','Pregunta de reflexión','textarea'],['imagen','Portada / imagen','file'],['orden','Orden','number'],['publicado','Publicado','checkbox']]},
+  advice:{title:'Asesorías',intro:'Administra instructores y su configuración de atención.',table:'instructores',label:'instructor',fields:[['nombre','Nombre del instructor','text',1],['correo','Correo','email'],['celular','Celular / WhatsApp','text'],['foto','Foto','file'],['duracion_minutos','Duración por asesoría (min)','select','15|30|45|60|90'],['activo','Instructor activo','checkbox']]}
+ };
+ function fhtml(f,r){let [k,l,t,req]=f,val=r?.[k]??''; if(t==='file')return `<label class="cm-field"><span>${l}</span><input data-k="${k}" data-existing="${esc2(val)}" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG o WEBP${val?' · Ya hay una imagen guardada':''}</small></label>`; if(t==='checkbox')return `<label class="cm-field cm-check"><input data-k="${k}" type="checkbox" ${val!==false?'checked':''}> <span>${l}</span></label>`; if(t==='textarea')return `<label class="cm-field"><span>${l}</span><textarea data-k="${k}" rows="${k==='contenido'?10:4}" ${req===1?'required':''}>${esc2(val)}</textarea></label>`; if(t==='select'){let opts=String(req||'').split('|');return `<label class="cm-field"><span>${l}</span><select data-k="${k}">${opts.map(x=>`<option ${String(val)===x?'selected':''}>${x}</option>`).join('')}</select></label>`;} return `<label class="cm-field"><span>${l}</span><input data-k="${k}" type="${t}" value="${esc2(t==='time'?String(val).slice(0,5):val)}" ${req===1?'required':''}></label>`;}
+ function allowed(m){const r=window.__naRoles||[];if(window.__naIsAdmin)return true;return m==='readings'?r.includes('encargado_lecturas'):m==='donations'?r.includes('encargado_donaciones'):m==='advice'?(r.includes('instructor')||r.includes('responsable_asesorias')):false;}
+ async function open(m){if(!allowed(m)){alert('Tu cuenta no tiene permiso para este módulo.');return;}mode=m;const d=defs[m];manager.hidden=false;$('#cmTitle').textContent=d.title;$('#cmIntro').textContent=d.intro;$('#cmAdd').textContent='+ Nueva '+d.label;await load();manager.scrollIntoView({behavior:'smooth'});}
+ async function load(){const d=defs[mode];list.innerHTML='<p class="admin-dev-note">Cargando…</p>';let base=db.from(d.table).select('*'); if(mode==='advice') base=base.eq('activo',true); let q=await base.order('id',{ascending:true});if(q.error){list.innerHTML=`<div class="empty-people">No se pudo cargar.<br><small>${esc2(q.error.message)}</small></div>`;return;}rows=q.data||[];render();}
+ function render(){let q=($('#cmSearch').value||'').toLowerCase();let arr=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(q));list.innerHTML=arr.length?arr.map(r=>{let name=r.titulo||r.nombre||r.nombre_apellido||('Registro '+r.id),sub=mode==='events'?`${r.fecha||''} · ${r.hora?.slice?.(0,5)||''} · ${r.sede||''}`:mode==='donations'?`${r.categoria||''} · ${r.conseguido?'Conseguido':'Pendiente'}`:mode==='readings'?`${r.autor||''} · ${r.tema||''}`:`${r.duracion_minutos||''} min · ${r.activo===false?'Inactivo':'Activo'}`;return `<div class="activity-admin-row"><div class="cm-wide"><div class="cm-row-title">${esc2(name)}</div><div class="cm-row-sub">${esc2(sub)}</div></div><div class="activity-admin-actions"><button class="mini-btn" data-cm-edit="${r.id}">Editar</button>${(mode==='events'||mode==='readings'||(mode==='advice'&&window.__naIsAdmin))?`<button class="mini-btn danger" data-cm-delete="${r.id}">Eliminar</button>`:''}</div></div>`}).join(''):'<div class="empty-people">No hay registros.</div>';list.querySelectorAll('[data-cm-edit]').forEach(b=>b.onclick=()=>edit(rows.find(r=>String(r.id)===b.dataset.cmEdit))); list.querySelectorAll('[data-cm-delete]').forEach(b=>b.onclick=()=>removeRecord(rows.find(r=>String(r.id)===b.dataset.cmDelete)));}
+ async function edit(r=null){let d=defs[mode];$('#cmId').value=r?.id||'';$('#cmModalTitle').textContent=r?'Editar '+d.label:'Nueva '+d.label;fields.innerHTML=d.fields.filter(f=>!r||Object.prototype.hasOwnProperty.call(r,f[0])).map(f=>fhtml(f,r)).join('');
+  if(mode==='advice'){
+    adviceAvailability=[];
+    if(r?.id){const av=await db.from('disponibilidad_instructores').select('id,dia,hora_inicio,hora_fin,activo').eq('instructor_id',r.id).eq('activo',true).order('dia').order('hora_inicio'); adviceAvailability=av.data||[];}
+    fields.insertAdjacentHTML('beforeend',`<div class="cm-field cm-availability"><span><strong>Disponibilidad semanal</strong></span><small>Agrega uno o varios bloques. Los horarios usan intervalos de 15 minutos.</small><div id="availabilityRows"></div><button type="button" class="mini-btn" id="addAvailability">+ Añadir horario</button></div>`);
+    const renderAv=()=>{const box=$('#availabilityRows'); box.innerHTML=adviceAvailability.map((a,i)=>`<div class="availability-row"><select data-av-day="${i}">${['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'].map((x,di)=>`<option value="${di+1}" ${Number(a.dia)===di+1?'selected':''}>${x}</option>`).join('')}</select><input type="time" step="900" data-av-start="${i}" value="${String(a.hora_inicio||'').slice(0,5)}"><span>a</span><input type="time" step="900" data-av-end="${i}" value="${String(a.hora_fin||'').slice(0,5)}"><button type="button" class="mini-btn" data-av-del="${i}">Quitar</button></div>`).join('')||'<p class="admin-dev-note">Aún no hay horarios. Pulsa “+ Añadir horario”.</p>'; box.querySelectorAll('[data-av-del]').forEach(b=>b.onclick=()=>{adviceAvailability.splice(Number(b.dataset.avDel),1);renderAv();});};
+    $('#addAvailability').onclick=()=>{adviceAvailability.push({dia:1,hora_inicio:'18:00',hora_fin:'19:00',activo:true});renderAv();}; renderAv();
+  }
+  $('#cmFormMsg').textContent='';modal.hidden=false;}
+ async function uploadCmImage(el,bucket,prefix){if(!el||!el.files||!el.files[0])return el?.dataset?.existing||null;const f=el.files[0];const ext=(f.name.split('.').pop()||'webp').toLowerCase();const path=`${prefix}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;const up=await db.storage.from(bucket).upload(path,f,{upsert:false,contentType:f.type});if(up.error)throw up.error;return db.storage.from(bucket).getPublicUrl(path).data.publicUrl;}
+ async function save(e){e.preventDefault();let d=defs[mode],id=$('#cmId').value,p={},m=$('#cmFormMsg');m.textContent='Guardando…';m.className='auth-msg';try{for(const el of fields.querySelectorAll('[data-k]')){let k=el.dataset.k;if(el.type==='file'){const bucket=mode==='advice'?'instructores':mode==='events'?'eventos':mode==='readings'?'lecturas':'actividades';p[k]=await uploadCmImage(el,bucket,mode);continue;}let v=el.type==='checkbox'?el.checked:el.value;if(el.type==='number'&&v!=='')v=Number(v);p[k]=v===''?null:v;}
+  if(mode==='readings' && (p.orden===null || p.orden===undefined)){ const mx=rows.reduce((m,r)=>Math.max(m,Number(r.orden)||0),0); p.orden=mx+1; }
+  if(mode==='events'){ p.titulo=(p.titulo||'').trim(); if(!p.titulo) throw new Error('El nombre del evento es obligatorio.'); }
+  if(mode==='advice'){
+    document.querySelectorAll('[data-av-day]').forEach(el=>{const i=Number(el.dataset.avDay); adviceAvailability[i].dia=el.value;});
+    document.querySelectorAll('[data-av-start]').forEach(el=>{const i=Number(el.dataset.avStart); adviceAvailability[i].hora_inicio=el.value;});
+    document.querySelectorAll('[data-av-end]').forEach(el=>{const i=Number(el.dataset.avEnd); adviceAvailability[i].hora_fin=el.value;});
+    for(const a of adviceAvailability){if(!a.hora_inicio||!a.hora_fin||a.hora_inicio>=a.hora_fin)throw new Error('Revisa los horarios: la hora final debe ser posterior a la inicial.');}
+    const rr=await db.rpc('admin_guardar_instructor',{p_id:id?Number(id):null,p_nombre:p.nombre,p_correo:p.correo||null,p_celular:p.celular||null,p_foto:p.foto||null,p_duracion_minutos:Number(p.duracion_minutos||60),p_activo:p.activo!==false}); if(rr.error)throw rr.error; const instructorId=Number(rr.data);
+    const ra=await db.rpc('admin_reemplazar_disponibilidad_instructor',{p_instructor_id:instructorId,p_bloques:adviceAvailability.map(a=>({dia:Number(a.dia),hora_inicio:a.hora_inicio,hora_fin:a.hora_fin}))}); if(ra.error)throw ra.error;
+  } else {let r=id?await db.from(d.table).update(p).eq('id',id):await db.from(d.table).insert(p);if(r.error)throw r.error;}
+  m.textContent='Guardado ✓';m.className='auth-msg success';await load();setTimeout(()=>modal.hidden=true,450);}catch(err){m.textContent='No se pudo guardar: '+(err?.message||err);m.className='auth-msg error';}}
+ async function removeRecord(r){ if(!r||!confirm(`¿Eliminar ${mode==='advice'?'este instructor':mode==='readings'?'esta lectura':'este evento'}?`))return; try{ if(mode==='advice'){const x=await db.rpc('admin_eliminar_instructor',{p_instructor_id:Number(r.id)}); if(x.error)throw x.error;} else if(mode==='events'){const x=await db.from('eventos').delete().eq('id',r.id); if(x.error)throw x.error;} else if(mode==='readings'){await db.from('lecturas_virtudes').delete().eq('lectura_id',r.id); const x=await db.from('lecturas').delete().eq('id',r.id); if(x.error)throw x.error;} await load(); }catch(err){alert('No se pudo eliminar: '+(err?.message||err));} }
+ $('#eventsShortcut')?.addEventListener('click',()=>open('events'));$('#donationsShortcut')?.addEventListener('click',()=>open('donations'));$('#readingsShortcut')?.addEventListener('click',()=>open('readings'));$('#adviceShortcut')?.addEventListener('click',()=>open('advice'));$('#cmAdd').onclick=()=>edit();$('#cmSearch').oninput=render;$('#cmClose').onclick=$('#cmCancel').onclick=()=>modal.hidden=true;modal.addEventListener('click',e=>{if(e.target===modal)modal.hidden=true});$('#cmForm').onsubmit=save;
 })();
