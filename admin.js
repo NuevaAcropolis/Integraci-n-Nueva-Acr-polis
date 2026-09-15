@@ -193,12 +193,13 @@ Se quitarán sus responsabilidades y ya no tendrá acceso a los módulos asignad
     // Mostrar SOLO los módulos autorizados.
     const visibility={
       agendaShortcut: canManageAgenda,
-      bookingsShortcut: isAdmin || roles.includes('instructor') || roles.includes('responsable_asesorias'),
       adviceShortcut: isAdmin || roles.includes('instructor') || roles.includes('responsable_asesorias'),
+      bookingsShortcut: isAdmin || roles.includes('instructor') || roles.includes('responsable_asesorias'),
       eventsShortcut: isAdmin,
       donationsShortcut: isAdmin || roles.includes('encargado_donaciones'),
       readingsShortcut: isAdmin || roles.includes('encargado_lecturas'),
-      peopleShortcut: isAdmin
+      peopleShortcut: isAdmin,
+      virtuesShortcut: isAdmin
     };
     Object.entries(visibility).forEach(([id,ok])=>{const el=document.getElementById(id);if(el)el.hidden=!ok;});
 
@@ -311,17 +312,194 @@ Se quitarán sus responsabilidades y ya no tendrá acceso a los módulos asignad
  };
  function fhtml(f,r){let [k,l,t,req]=f,val=r?.[k]??''; if(t==='file')return `<label class="cm-field"><span>${l}</span><input data-k="${k}" data-existing="${esc2(val)}" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG o WEBP${val?' · Ya hay una imagen guardada':''}</small></label>`; if(t==='checkbox')return `<label class="cm-field cm-check"><input data-k="${k}" type="checkbox" ${val!==false?'checked':''}> <span>${l}</span></label>`; if(t==='textarea')return `<label class="cm-field"><span>${l}</span><textarea data-k="${k}" rows="${k==='contenido'?10:4}" ${req===1?'required':''}>${esc2(val)}</textarea></label>`; if(t==='select'){let opts=String(req||'').split('|');return `<label class="cm-field"><span>${l}</span><select data-k="${k}">${opts.map(x=>`<option ${String(val)===x?'selected':''}>${x}</option>`).join('')}</select></label>`;} return `<label class="cm-field"><span>${l}</span><input data-k="${k}" type="${t}" value="${esc2(t==='time'?String(val).slice(0,5):val)}" ${req===1?'required':''}></label>`;}
  function allowed(m){const r=window.__naRoles||[];if(window.__naIsAdmin)return true;if(m==='virtues')return false;return m==='readings'?r.includes('encargado_lecturas'):m==='donations'?r.includes('encargado_donaciones'):m==='advice'?(r.includes('instructor')||r.includes('responsable_asesorias')):false;}
- async function open(m){if(!allowed(m)){alert('Tu cuenta no tiene permiso para este módulo.');return;}mode=m;const d=defs[m];manager.hidden=false;$('#cmTitle').textContent=d.title;$('#cmIntro').textContent=d.intro;$('#cmAdd').textContent='+ Nueva '+d.label;if(m==='advice')await renderAdviceBookings();else document.querySelector('#adviceBookings')?.remove();await load();manager.scrollIntoView({behavior:'smooth'});}
+ async function open(m){if(!allowed(m)){alert('Tu cuenta no tiene permiso para este módulo.');return;}mode=m;const d=defs[m];manager.hidden=false;$('#cmTitle').textContent=d.title;$('#cmIntro').textContent=d.intro;$('#cmAdd').textContent='+ Nueva '+d.label;if(m==='advice'){
+  await renderAdviceBookings();
+  await renderAlternateRequests();
+}else document.querySelector('#adviceBookings')?.remove();await load();manager.scrollIntoView({behavior:'smooth'});}
+async function renderAlternateRequests(){
+  let box=document.querySelector('#alternateRequests');
 
+  if(!box){
+    box=document.createElement('section');
+    box.id='alternateRequests';
+    box.style.cssText='margin:18px 0 18px;padding:18px;border:1px solid #d8d2c4;border-radius:14px;background:#fffdf7';
+
+    const bookings=document.querySelector('#adviceBookings');
+    if(bookings) bookings.parentNode.insertBefore(box,bookings);
+    else list.parentNode.insertBefore(box,list);
+  }
+
+  box.innerHTML='<h3 style="margin:0 0 6px">Solicitudes de otro horario</h3><p class="admin-dev-note">Cargando solicitudes…</p>';
+
+  const q=await db.rpc('listar_solicitudes_horario_panel');
+
+  if(q.error){
+    box.innerHTML='<h3>Solicitudes de otro horario</h3><p class="admin-dev-note">No se pudieron cargar: '+esc2(q.error.message)+'</p>';
+    return;
+  }
+
+  const all=(q.data||[]).filter(r=>String(r.estado||'pendiente').toLowerCase()==='pendiente');
+
+  box.innerHTML=`
+    <h3 style="margin:0 0 6px">Solicitudes de otro horario</h3>
+    <p class="admin-dev-note">Solicitudes pendientes de revisión.</p>
+    <div id="alternateList"></div>
+  `;
+
+  const dest=box.querySelector('#alternateList');
+
+  dest.innerHTML=all.length ? all.map(r=>{
+    const phone=String(r.whatsapp_persona||'').replace(/\D/g,'');
+    const wa=phone.length===9?'51'+phone:phone;
+
+    const fecha=new Date(String(r.fecha_preferida)+'T12:00:00')
+      .toLocaleDateString('es-PE',{
+        weekday:'short',
+        day:'numeric',
+        month:'short'
+      });
+
+    return `
+      <div class="activity-admin-row" style="align-items:center">
+
+        <div class="cm-wide">
+          <div class="cm-row-title">${esc2(r.nombre_persona)}</div>
+
+          <div class="cm-row-sub">
+            ${esc2(r.instructor_nombre||'')} ·
+            ${esc2(fecha)} ·
+            ${esc2(String(r.hora_preferida||'').slice(0,5))}
+            ${r.whatsapp_persona?' · '+esc2(r.whatsapp_persona):''}
+            ${r.correo_persona?' · '+esc2(r.correo_persona):''}
+          </div>
+
+          ${r.mensaje ? `
+            <div class="cm-row-sub" style="margin-top:5px">
+              “${esc2(r.mensaje)}”
+            </div>
+          `:''}
+        </div>
+
+        <div class="activity-admin-actions">
+
+          ${wa ? `
+            <a
+              class="mini-btn"
+              target="_blank"
+              rel="noopener"
+              href="https://wa.me/${wa}?text=${encodeURIComponent(
+                `Hola ${r.nombre_persona}, te escribo de Nueva Acrópolis Huancayo por la solicitud de otro horario que enviaste para tu asesoría filosófica.`
+              )}">
+              WhatsApp
+            </a>
+          `:''}
+
+          <button
+            class="mini-btn"
+            data-alt-state="aceptada"
+            data-alt-id="${r.solicitud_id}">
+            Aceptar
+          </button>
+
+          <button
+            class="mini-btn danger"
+            data-alt-state="rechazada"
+            data-alt-id="${r.solicitud_id}">
+            Rechazar
+          </button>
+          <button
+  class="mini-btn danger"
+  data-alt-delete="${r.solicitud_id}">
+  Eliminar
+</button>
+
+        </div>
+      </div>
+    `;
+  }).join('') :
+  '<div class="empty-people">No hay solicitudes pendientes.</div>';
+
+  dest.querySelectorAll('[data-alt-state]').forEach(b=>{
+   dest.querySelectorAll('[data-alt-state]').forEach(b=>{
+  b.onclick=async()=>{
+
+    const solicitud=all.find(
+      r=>Number(r.solicitud_id)===Number(b.dataset.altId)
+    );
+
+    const estado=b.dataset.altState;
+
+    const x=await db.rpc('actualizar_solicitud_horario',{
+      p_solicitud_id:Number(b.dataset.altId),
+      p_estado:estado
+    });
+
+    if(x.error){
+      alert('No se pudo actualizar: '+x.error.message);
+      return;
+    }
+
+    if(estado==='aceptada' && solicitud){
+
+      let numero=String(solicitud.whatsapp_persona||'').replace(/\D/g,'');
+      if(numero.length===9) numero='51'+numero;
+
+      const fecha=new Date(
+        String(solicitud.fecha_preferida)+'T12:00:00'
+      ).toLocaleDateString('es-PE',{
+        weekday:'long',
+        day:'numeric',
+        month:'long'
+      });
+
+      const hora=new Date(
+        `2000-01-01T${String(solicitud.hora_preferida).slice(0,5)}`
+      ).toLocaleTimeString('es-PE',{
+        hour:'numeric',
+        minute:'2-digit'
+      });
+
+      const nombre=String(solicitud.nombre_persona||'').trim().split(' ')[0];
+
+const mensaje =
+`Hola ${nombre}, recibí tu solicitud de otro horario para la asesoría filosófica :). Soy ${solicitud.instructor_nombre} y sí dispondré de tiempo.
+${fecha.charAt(0).toUpperCase()+fecha.slice(1)}
+${hora}
+¡Nos vemos ${nombre}!`;
+      if(numero){
+      const whatsappUrl =
+  'https://wa.me/' + numero +
+  '?text=' + encodeURIComponent(mensaje);
+
+window.open(whatsappUrl, '_blank', 'noopener');
+      }
+    }
+
+    await renderAlternateRequests();
+  };
+});
+    b.onclick=async()=>{
+      const x=await db.rpc('actualizar_solicitud_horario',{
+        p_solicitud_id:Number(b.dataset.altId),
+        p_estado:b.dataset.altState
+      });
+
+      if(x.error){
+        alert('No se pudo actualizar: '+x.error.message);
+        return;
+      }
+
+      await renderAlternateRequests();
+    };
+  });
+}
  async function renderAdviceBookings(){
   let box=document.querySelector('#adviceBookings');
   if(!box){box=document.createElement('section');box.id='adviceBookings';box.style.cssText='margin:18px 0 26px;padding:18px;border:1px solid #d8d2c4;border-radius:14px;background:#fffdf7';list.parentNode.insertBefore(box,list);}
   box.innerHTML='<h3 style="margin:0 0 6px">Asesorías confirmadas</h3><p class="admin-dev-note">Cargando reservas…</p>';
-  // V39: la nueva función devuelve JSON y evita el conflicto de columnas `id`
-  // que producía la función anterior de PostgreSQL.
-  const q=await db.rpc('listar_reservas_asesoria_confirmadas_v2');
-  if(q.error){box.innerHTML='<h3 style="margin:0 0 6px">Asesorías confirmadas</h3><p class="admin-dev-note">No se pudieron cargar las reservas. Primero ejecuta el archivo <strong>SQL_CORREGIR_ASESORIAS_CONFIRMADAS.sql</strong> en Supabase.<br><small>'+esc2(q.error.message)+'</small></p>';return;}
-  const all=Array.isArray(q.data)?q.data:[];
+  const q=await db.rpc('listar_reservas_asesoria_panel');
+  if(q.error){box.innerHTML='<h3 style="margin:0 0 6px">Asesorías confirmadas</h3><p class="admin-dev-note">No se pudieron cargar las reservas: '+esc2(q.error.message)+'</p>';return;}
+  const all=(Array.isArray(q.data)?q.data:[]).map(r=>({...r,id:r.id??r.reserva_id}));
   const now=new Date();
   const tabs=['proximas','realizadas','canceladas'];
   box.innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">Asesorías confirmadas</h3><p class="admin-dev-note" style="margin:4px 0 0">${window.__naIsAdmin||(window.__naRoles||[]).includes('responsable_asesorias')?'Todas las reservas':'Tus próximas reservas'}</p></div><div id="bookingTabs" style="display:flex;gap:6px;flex-wrap:wrap">${tabs.map((t,i)=>`<button type="button" class="mini-btn" data-book-tab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div><div id="bookingList" style="margin-top:12px"></div>`;
@@ -355,5 +533,5 @@ Se quitarán sus responsabilidades y ya no tendrá acceso a los módulos asignad
   } else {let r=id?await db.from(d.table).update(p).eq('id',id):await db.from(d.table).insert(p);if(r.error)throw r.error;}
   m.textContent='Guardado ✓';m.className='auth-msg success';await load();setTimeout(()=>modal.hidden=true,450);}catch(err){m.textContent='No se pudo guardar: '+(err?.message||err);m.className='auth-msg error';}}
  async function removeRecord(r){ if(!r||!confirm(`¿Eliminar ${mode==='advice'?'este instructor':mode==='readings'?'esta lectura':'este evento'}?`))return; try{ if(mode==='advice'){const x=await db.rpc('admin_eliminar_instructor',{p_instructor_id:Number(r.id)}); if(x.error)throw x.error;} else if(mode==='events'){const x=await db.from('eventos').delete().eq('id',r.id); if(x.error)throw x.error;} else if(mode==='readings'){await db.from('lecturas_virtudes').delete().eq('lectura_id',r.id); const x=await db.from('lecturas').delete().eq('id',r.id); if(x.error)throw x.error;} await load(); }catch(err){alert('No se pudo eliminar: '+(err?.message||err));} }
- $('#virtuesShortcut')?.addEventListener('click',()=>open('virtues'));$('#eventsShortcut')?.addEventListener('click',()=>open('events'));$('#donationsShortcut')?.addEventListener('click',()=>open('donations'));$('#readingsShortcut')?.addEventListener('click',()=>open('readings'));$('#adviceShortcut')?.addEventListener('click',()=>open('advice'));$('#bookingsShortcut')?.addEventListener('click',async()=>{await open('advice');document.querySelector('#adviceBookings')?.scrollIntoView({behavior:'smooth',block:'start'});});$('#cmAdd').onclick=()=>edit();$('#cmSearch').oninput=render;$('#cmClose').onclick=$('#cmCancel').onclick=()=>modal.hidden=true;modal.addEventListener('click',e=>{if(e.target===modal)modal.hidden=true});$('#cmForm').onsubmit=save;
+ $('#bookingsShortcut')?.addEventListener('click',async()=>{await open('advice');setTimeout(()=>document.querySelector('#adviceBookings')?.scrollIntoView({behavior:'smooth',block:'start'}),120);});$('#virtuesShortcut')?.addEventListener('click',()=>open('virtues'));$('#eventsShortcut')?.addEventListener('click',()=>open('events'));$('#donationsShortcut')?.addEventListener('click',()=>open('donations'));$('#readingsShortcut')?.addEventListener('click',()=>open('readings'));$('#adviceShortcut')?.addEventListener('click',()=>open('advice'));$('#cmAdd').onclick=()=>edit();$('#cmSearch').oninput=render;$('#cmClose').onclick=$('#cmCancel').onclick=()=>modal.hidden=true;modal.addEventListener('click',e=>{if(e.target===modal)modal.hidden=true});$('#cmForm').onsubmit=save;
 })();
