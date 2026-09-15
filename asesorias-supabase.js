@@ -2,8 +2,7 @@
 (async function(){
  const cfg=window.NA_SUPABASE, root=document.getElementById('instructorGrid');
  if(!root||!cfg?.url||!cfg?.anonKey)return;
- const headers={apikey:cfg.anonKey,'Content-Type':'appli
-  cation/json'};
+ const headers={apikey:cfg.anonKey,'Content-Type':'application/json'};
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const get=async p=>{const r=await fetch(`${cfg.url}/rest/v1/${p}`,{headers});if(!r.ok){const detail=await r.text();throw Error(`GET ${p.split('?')[0]} · HTTP ${r.status} · ${detail}`)}return r.json()};
  const rpc=async(name,body)=>{const r=await fetch(`${cfg.url}/rest/v1/rpc/${name}`,{method:'POST',headers,body:JSON.stringify(body)});if(!r.ok){const detail=await r.text();throw Error(`RPC ${name} · HTTP ${r.status} · ${detail}`)}return r.json()};
