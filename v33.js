@@ -81,7 +81,8 @@
 
  // Lecturas tipo pequeño libro — preparado para textos largos
  const readings=Array.isArray(window.LECTURAS_FALLBACK)?window.LECTURAS_FALLBACK:(typeof LECTURAS_FALLBACK!=="undefined"?LECTURAS_FALLBACK:[]);
- function renderReadings(list=readings){const g=$("#readingGrid");if(!g)return;g.innerHTML=list.map(r=>`<button class="reading-card" data-reading="${esc(r.id)}"><span class="book-spine"></span><span class="eyebrow">${esc(r.virtud||r.tema||"LECTURA")}</span><h3>${esc(r.titulo)}</h3><p>${esc(r.autor||"Nueva Acrópolis")}</p><small>Leer · ${Math.max(1,Math.ceil((r.contenido||"").split(/\s+/).length/180))} min →</small></button>`).join(""); $$('[data-reading]').forEach(b=>b.onclick=()=>openReading(b.dataset.reading))}
+ function renderReadings(list=readings){const g=$("#readingGrid");if(!g)return;g.innerHTML=list.map(r=>`<button class="reading-card ${r.imagen?'has-cover':''}" data-reading="${esc(r.id)}">${r.imagen?`<img class="reading-cover" src="${esc(r.imagen)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}<span class="book-spine"></span><span class="eyebrow">${esc(r.virtud||r.tema||"LECTURA")}</span><h3>${esc(r.titulo)}</h3><p>${esc(r.autor||"Nueva Acrópolis")}</p><small>Leer · ${Math.max(1,Math.ceil((r.contenido||"").split(/\s+/).length/180))} min →</small></button>`).join(""); $$('[data-reading]').forEach(b=>b.onclick=()=>openReading(b.dataset.reading))}
+ window.NA_RENDER_READINGS=renderReadings;
  function paginateReading(text,targetWords=300){
    const paras=String(text||"").split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean), pages=[]; let current=[], count=0;
    paras.forEach(par=>{
