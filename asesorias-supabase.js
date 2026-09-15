@@ -117,13 +117,32 @@
         p_mensaje:fd.get('mensaje')||null
       });
 
-      currentForm.outerHTML=`
-        <div class="success-booking">
-          <b>✓ Solicitud enviada</b>
-          <p>Tu propuesta fue enviada correctamente.</p>
-          <p>Este horario todavía no está reservado. El instructor deberá revisarlo para coordinar contigo.</p>
-        </div>
-      `;
+     const nombre = fd.get('nombre');
+const fecha = fd.get('fecha');
+const hora = fd.get('hora');
+
+const mensajeWhatsApp =
+  `Hola ${ins.nombre}, envié una solicitud de otro horario para una asesoría filosófica desde la página de Nueva Acrópolis. ` +
+  `Propuse el ${fecha} a las ${fmtTime(hora)}. Mi nombre es ${nombre}. ¿Podrías revisarla, por favor?`;
+
+const numeroInstructor = String(ins.whatsapp || '').replace(/\D/g,'');
+
+currentForm.outerHTML=`
+  <div class="success-booking">
+    <b>✓ Solicitud enviada</b>
+    <p>Tu propuesta fue enviada correctamente.</p>
+    <p>Este horario todavía no está reservado. El instructor deberá revisarlo para coordinar contigo.</p>
+
+    ${numeroInstructor ? `
+      <a class="primary-btn"
+         href="https://wa.me/${numeroInstructor}?text=${encodeURIComponent(mensajeWhatsApp)}"
+         target="_blank"
+         rel="noopener">
+        Enviar solicitud por WhatsApp al instructor
+      </a>
+    ` : ''}
+  </div>
+`;
 
     }catch(err){
       console.error(err);
