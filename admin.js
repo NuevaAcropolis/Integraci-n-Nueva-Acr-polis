@@ -193,13 +193,12 @@ Se quitarán sus responsabilidades y ya no tendrá acceso a los módulos asignad
     // Mostrar SOLO los módulos autorizados.
     const visibility={
       agendaShortcut: canManageAgenda,
-      adviceShortcut: isAdmin || roles.includes('instructor') || roles.includes('responsable_asesorias'),
       bookingsShortcut: isAdmin || roles.includes('instructor') || roles.includes('responsable_asesorias'),
+      adviceShortcut: isAdmin || roles.includes('instructor') || roles.includes('responsable_asesorias'),
       eventsShortcut: isAdmin,
       donationsShortcut: isAdmin || roles.includes('encargado_donaciones'),
       readingsShortcut: isAdmin || roles.includes('encargado_lecturas'),
-      peopleShortcut: isAdmin,
-      virtuesShortcut: isAdmin
+      peopleShortcut: isAdmin
     };
     Object.entries(visibility).forEach(([id,ok])=>{const el=document.getElementById(id);if(el)el.hidden=!ok;});
 
@@ -256,7 +255,10 @@ Se quitarán sus responsabilidades y ya no tendrá acceso a los módulos asignad
   const DAY_NAMES=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
   let canManageAgenda=false, activityCache=[];
   function activityDayInputs(selected=[]){document.querySelector('#activityDays').innerHTML=DAY_NAMES.map((n,i)=>`<label class="day-check"><input type="checkbox" name="activityDays" value="${i+1}" ${selected.includes(i+1)?'checked':''}> ${n}</label>`).join('');}
-  function openActivityAdmin(a=null){activityForm.reset();document.querySelector('#activityId').value=a?.id||'';document.querySelector('#activityTitle').textContent=a?'Editar taller':'Nuevo taller';document.querySelector('#activityName').value=a?.nombre||'';document.querySelector('#activityVenue').value=a?.sede||'San Carlos';document.querySelector('#activityTime').value=(a?.hora||'18:00').slice(0,5);document.querySelector('#activityFrom').value=a?.desde||new Date().toISOString().slice(0,10);document.querySelector('#activityTo').value=a?.hasta||'2027-12-31';document.querySelector('#activityLead').value=a?.encargado||'';document.querySelector('#activityWhatsapp').value=a?.whatsapp||'';document.querySelector('#activityPhrase').value=a?.frase||'';document.querySelector('#activityPhoto').value=a?.foto||'';document.querySelector('#activityActive').checked=a?a.activo!==false:true;activityDayInputs(a?.dias||[]);document.querySelector('#activityFormMsg').textContent='';activityModal.hidden=false;}
+  function activityPhotoSrc(value){if(!value)return'';return /^(https?:|data:|blob:)/i.test(value)?value:`img/actividades/${value}`;}
+  function showActivityPhoto(value){const preview=document.querySelector('#activityPhotoPreview'),img=document.querySelector('#activityPhotoPreviewImg');if(!value){preview.hidden=true;img.removeAttribute('src');return;}img.src=activityPhotoSrc(value);preview.hidden=false;}
+  function openActivityAdmin(a=null){activityForm.reset();document.querySelector('#activityId').value=a?.id||'';document.querySelector('#activityTitle').textContent=a?'Editar taller':'Nuevo taller';document.querySelector('#activityName').value=a?.nombre||'';document.querySelector('#activityVenue').value=a?.sede||'San Carlos';document.querySelector('#activityTime').value=(a?.hora||'18:00').slice(0,5);document.querySelector('#activityFrom').value=a?.desde||new Date().toISOString().slice(0,10);document.querySelector('#activityTo').value=a?.hasta||'2027-12-31';document.querySelector('#activityLead').value=a?.encargado||'';document.querySelector('#activityWhatsapp').value=a?.whatsapp||'';document.querySelector('#activityPhrase').value=a?.frase||'';document.querySelector('#activityPhoto').value=a?.foto||'';showActivityPhoto(a?.foto||'');document.querySelector('#activityActive').checked=a?a.activo!==false:true;activityDayInputs(a?.dias||[]);document.querySelector('#activityFormMsg').textContent='';activityModal.hidden=false;}
+  async function uploadActivityPhoto(){const input=document.querySelector('#activityPhotoFile'),file=input?.files?.[0];if(!file)return document.querySelector('#activityPhoto').value.trim()||null;if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('La fotografía debe ser JPG, PNG o WEBP.');if(file.size>8*1024*1024)throw new Error('La fotografía supera el máximo de 8 MB.');const ext=(file.name.split('.').pop()||'webp').toLowerCase();const path=`agenda/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;const up=await sb.storage.from('actividades').upload(path,file,{upsert:false,contentType:file.type});if(up.error)throw up.error;return sb.storage.from('actividades').getPublicUrl(path).data.publicUrl;}
   function closeActivityAdmin(){activityModal.hidden=true;}
   function slugify(v){return v.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,70);}
   function renderActivityAdmin(){const q=(document.querySelector('#activitySearch').value||'').toLowerCase(), st=document.querySelector('#activityStatus').value;let rows=activityCache.filter(a=>(!q||a.nombre.toLowerCase().includes(q))&&(st==='all'||(st==='active'?a.activo!==false:a.activo===false)));if(!rows.length){activityAdminList.innerHTML='<div class="empty-people">No hay actividades con este filtro.</div>';return;}activityAdminList.innerHTML=rows.map(a=>`<div class="activity-admin-row"><div><div class="activity-admin-name">${esc(a.nombre)}</div><span class="status-chip ${a.activo?'':'off'}">${a.activo?'Activa':'Finalizada'}</span></div><div class="activity-admin-meta">${(a.dias||[]).map(d=>DAY_NAMES[d-1]).join(', ')||'Sin día'}<br><strong>${esc((a.hora||'').slice(0,5))}</strong></div><div class="activity-admin-meta">${esc(a.sede||'')}<br>${esc(a.desde||'')} → ${esc(a.hasta||'')}</div><div class="activity-admin-actions"><button class="mini-btn" data-aedit="${a.id}">Editar</button><button class="mini-btn" data-aexception="${a.id}">Una fecha</button><button class="mini-btn" data-atoggle="${a.id}">${a.activo?'Finalizar':'Reactivar'}</button></div></div>`).join('');activityAdminList.querySelectorAll('[data-aedit]').forEach(b=>b.onclick=()=>openActivityAdmin(activityCache.find(a=>a.id===Number(b.dataset.aedit))));activityAdminList.querySelectorAll('[data-aexception]').forEach(b=>b.onclick=()=>openException(activityCache.find(a=>a.id===Number(b.dataset.aexception))));activityAdminList.querySelectorAll('[data-atoggle]').forEach(b=>b.onclick=()=>toggleActivity(Number(b.dataset.atoggle)));}
@@ -265,8 +267,9 @@ Se quitarán sus responsabilidades y ya no tendrá acceso a los módulos asignad
   function openException(a){exceptionForm.reset();document.querySelector('#exceptionActivityId').value=a.id;document.querySelector('#exceptionTitle').textContent=a.nombre;document.querySelector('#exceptionDate').value='';document.querySelector('#exceptionType').value='cancelar';document.querySelector('#newTimeWrap').hidden=true;document.querySelector('#exceptionMsg').textContent='';exceptionModal.hidden=false;}
   function closeException(){exceptionModal.hidden=true;}
   document.querySelector('#addActivityBtn').onclick=()=>openActivityAdmin();document.querySelector('#activityClose').onclick=closeActivityAdmin;document.querySelector('#cancelActivityEdit').onclick=closeActivityAdmin;activityModal.addEventListener('click',e=>{if(e.target===activityModal)closeActivityAdmin();});
+  document.querySelector('#activityPhotoFile').onchange=e=>{const file=e.target.files?.[0];if(file)showActivityPhoto(URL.createObjectURL(file));};
   document.querySelector('#exceptionClose').onclick=closeException;document.querySelector('#cancelException').onclick=closeException;exceptionModal.addEventListener('click',e=>{if(e.target===exceptionModal)closeException();});document.querySelector('#exceptionType').onchange=e=>document.querySelector('#newTimeWrap').hidden=e.target.value!=='cambiar_hora';document.querySelector('#activitySearch').oninput=renderActivityAdmin;document.querySelector('#activityStatus').onchange=renderActivityAdmin;
-  activityForm.onsubmit=async e=>{e.preventDefault();if(!canManageAgenda)return;const m=document.querySelector('#activityFormMsg'),id=Number(document.querySelector('#activityId').value)||null,days=[...activityForm.querySelectorAll('[name=activityDays]:checked')].map(x=>Number(x.value));if(!days.length){m.textContent='Selecciona al menos un día.';m.className='auth-msg error';return;}const name=document.querySelector('#activityName').value.trim();const payload={nombre:name,dias:days,hora:document.querySelector('#activityTime').value,sede:document.querySelector('#activityVenue').value,desde:document.querySelector('#activityFrom').value,hasta:document.querySelector('#activityTo').value,encargado:document.querySelector('#activityLead').value.trim()||null,whatsapp:document.querySelector('#activityWhatsapp').value.trim()||null,frase:document.querySelector('#activityPhrase').value.trim()||null,foto:document.querySelector('#activityPhoto').value.trim()||null,activo:document.querySelector('#activityActive').checked};if(!id)payload.slug=slugify(name)+'-'+Date.now().toString().slice(-5);m.textContent='Guardando…';let r=id?await sb.from('actividades').update(payload).eq('id',id):await sb.from('actividades').insert(payload);if(r.error){m.textContent='No pudimos guardar: '+r.error.message;m.className='auth-msg error';return;}m.textContent='Guardado correctamente ✓';m.className='auth-msg success';await loadActivitiesAdmin();setTimeout(closeActivityAdmin,600);};
+  activityForm.onsubmit=async e=>{e.preventDefault();if(!canManageAgenda)return;const m=document.querySelector('#activityFormMsg'),id=Number(document.querySelector('#activityId').value)||null,days=[...activityForm.querySelectorAll('[name=activityDays]:checked')].map(x=>Number(x.value));if(!days.length){m.textContent='Selecciona al menos un día.';m.className='auth-msg error';return;}const name=document.querySelector('#activityName').value.trim();m.textContent=document.querySelector('#activityPhotoFile').files?.[0]?'Subiendo fotografía…':'Guardando…';m.className='auth-msg';try{const photo=await uploadActivityPhoto();const payload={nombre:name,dias:days,hora:document.querySelector('#activityTime').value,sede:document.querySelector('#activityVenue').value,desde:document.querySelector('#activityFrom').value,hasta:document.querySelector('#activityTo').value,encargado:document.querySelector('#activityLead').value.trim()||null,whatsapp:document.querySelector('#activityWhatsapp').value.trim()||null,frase:document.querySelector('#activityPhrase').value.trim()||null,foto:photo,activo:document.querySelector('#activityActive').checked};if(!id)payload.slug=slugify(name)+'-'+Date.now().toString().slice(-5);const r=id?await sb.from('actividades').update(payload).eq('id',id):await sb.from('actividades').insert(payload);if(r.error)throw r.error;m.textContent='Guardado correctamente ✓';m.className='auth-msg success';await loadActivitiesAdmin();setTimeout(closeActivityAdmin,600);}catch(err){m.textContent='No pudimos guardar: '+(err?.message||err);m.className='auth-msg error';}};
   exceptionForm.onsubmit=async e=>{e.preventDefault();if(!canManageAgenda)return;const m=document.querySelector('#exceptionMsg'),activity_id=Number(document.querySelector('#exceptionActivityId').value),fecha=document.querySelector('#exceptionDate').value,type=document.querySelector('#exceptionType').value;if(type==='cancelar'){const r=await sb.from('actividades_canceladas').upsert({actividad_id,fecha},{onConflict:'actividad_id,fecha'});if(r.error){m.textContent='No pudimos cancelar: '+r.error.message;m.className='auth-msg error';return;}}else{const hora=document.querySelector('#exceptionNewTime').value;if(!hora){m.textContent='Indica la nueva hora.';m.className='auth-msg error';return;}const r=await sb.from('actividad_excepciones').upsert({actividad_id,fecha,hora,note:document.querySelector('#exceptionNote').value.trim()||null},{onConflict:'actividad_id,fecha'});if(r.error){m.textContent='Falta activar la tabla de cambios especiales. Ejecuta el SQL incluido en V37L. Detalle: '+r.error.message;m.className='auth-msg error';return;}}m.textContent='Cambio guardado ✓';m.className='auth-msg success';setTimeout(closeException,600);};
   document.querySelector('#agendaShortcut').onclick=async()=>{
     if(!canManageAgenda){ alert('Tu cuenta inició sesión, pero aún no tiene permiso para gestionar la agenda.'); return; }
@@ -308,194 +311,17 @@ Se quitarán sus responsabilidades y ya no tendrá acceso a los módulos asignad
  };
  function fhtml(f,r){let [k,l,t,req]=f,val=r?.[k]??''; if(t==='file')return `<label class="cm-field"><span>${l}</span><input data-k="${k}" data-existing="${esc2(val)}" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG o WEBP${val?' · Ya hay una imagen guardada':''}</small></label>`; if(t==='checkbox')return `<label class="cm-field cm-check"><input data-k="${k}" type="checkbox" ${val!==false?'checked':''}> <span>${l}</span></label>`; if(t==='textarea')return `<label class="cm-field"><span>${l}</span><textarea data-k="${k}" rows="${k==='contenido'?10:4}" ${req===1?'required':''}>${esc2(val)}</textarea></label>`; if(t==='select'){let opts=String(req||'').split('|');return `<label class="cm-field"><span>${l}</span><select data-k="${k}">${opts.map(x=>`<option ${String(val)===x?'selected':''}>${x}</option>`).join('')}</select></label>`;} return `<label class="cm-field"><span>${l}</span><input data-k="${k}" type="${t}" value="${esc2(t==='time'?String(val).slice(0,5):val)}" ${req===1?'required':''}></label>`;}
  function allowed(m){const r=window.__naRoles||[];if(window.__naIsAdmin)return true;if(m==='virtues')return false;return m==='readings'?r.includes('encargado_lecturas'):m==='donations'?r.includes('encargado_donaciones'):m==='advice'?(r.includes('instructor')||r.includes('responsable_asesorias')):false;}
- async function open(m){if(!allowed(m)){alert('Tu cuenta no tiene permiso para este módulo.');return;}mode=m;const d=defs[m];manager.hidden=false;$('#cmTitle').textContent=d.title;$('#cmIntro').textContent=d.intro;$('#cmAdd').textContent='+ Nueva '+d.label;if(m==='advice'){
-  await renderAdviceBookings();
-  await renderAlternateRequests();
-}else document.querySelector('#adviceBookings')?.remove();await load();manager.scrollIntoView({behavior:'smooth'});}
-async function renderAlternateRequests(){
-  let box=document.querySelector('#alternateRequests');
+ async function open(m){if(!allowed(m)){alert('Tu cuenta no tiene permiso para este módulo.');return;}mode=m;const d=defs[m];manager.hidden=false;$('#cmTitle').textContent=d.title;$('#cmIntro').textContent=d.intro;$('#cmAdd').textContent='+ Nueva '+d.label;if(m==='advice')await renderAdviceBookings();else document.querySelector('#adviceBookings')?.remove();await load();manager.scrollIntoView({behavior:'smooth'});}
 
-  if(!box){
-    box=document.createElement('section');
-    box.id='alternateRequests';
-    box.style.cssText='margin:18px 0 18px;padding:18px;border:1px solid #d8d2c4;border-radius:14px;background:#fffdf7';
-
-    const bookings=document.querySelector('#adviceBookings');
-    if(bookings) bookings.parentNode.insertBefore(box,bookings);
-    else list.parentNode.insertBefore(box,list);
-  }
-
-  box.innerHTML='<h3 style="margin:0 0 6px">Solicitudes de otro horario</h3><p class="admin-dev-note">Cargando solicitudes…</p>';
-
-  const q=await db.rpc('listar_solicitudes_horario_panel');
-
-  if(q.error){
-    box.innerHTML='<h3>Solicitudes de otro horario</h3><p class="admin-dev-note">No se pudieron cargar: '+esc2(q.error.message)+'</p>';
-    return;
-  }
-
-  const all=(q.data||[]).filter(r=>String(r.estado||'pendiente').toLowerCase()==='pendiente');
-
-  box.innerHTML=`
-    <h3 style="margin:0 0 6px">Solicitudes de otro horario</h3>
-    <p class="admin-dev-note">Solicitudes pendientes de revisión.</p>
-    <div id="alternateList"></div>
-  `;
-
-  const dest=box.querySelector('#alternateList');
-
-  dest.innerHTML=all.length ? all.map(r=>{
-    const phone=String(r.whatsapp_persona||'').replace(/\D/g,'');
-    const wa=phone.length===9?'51'+phone:phone;
-
-    const fecha=new Date(String(r.fecha_preferida)+'T12:00:00')
-      .toLocaleDateString('es-PE',{
-        weekday:'short',
-        day:'numeric',
-        month:'short'
-      });
-
-    return `
-      <div class="activity-admin-row" style="align-items:center">
-
-        <div class="cm-wide">
-          <div class="cm-row-title">${esc2(r.nombre_persona)}</div>
-
-          <div class="cm-row-sub">
-            ${esc2(r.instructor_nombre||'')} ·
-            ${esc2(fecha)} ·
-            ${esc2(String(r.hora_preferida||'').slice(0,5))}
-            ${r.whatsapp_persona?' · '+esc2(r.whatsapp_persona):''}
-            ${r.correo_persona?' · '+esc2(r.correo_persona):''}
-          </div>
-
-          ${r.mensaje ? `
-            <div class="cm-row-sub" style="margin-top:5px">
-              “${esc2(r.mensaje)}”
-            </div>
-          `:''}
-        </div>
-
-        <div class="activity-admin-actions">
-
-          ${wa ? `
-            <a
-              class="mini-btn"
-              target="_blank"
-              rel="noopener"
-              href="https://wa.me/${wa}?text=${encodeURIComponent(
-                `Hola ${r.nombre_persona}, te escribo de Nueva Acrópolis Huancayo por la solicitud de otro horario que enviaste para tu asesoría filosófica.`
-              )}">
-              WhatsApp
-            </a>
-          `:''}
-
-          <button
-            class="mini-btn"
-            data-alt-state="aceptada"
-            data-alt-id="${r.solicitud_id}">
-            Aceptar
-          </button>
-
-          <button
-            class="mini-btn danger"
-            data-alt-state="rechazada"
-            data-alt-id="${r.solicitud_id}">
-            Rechazar
-          </button>
-          <button
-  class="mini-btn danger"
-  data-alt-delete="${r.solicitud_id}">
-  Eliminar
-</button>
-
-        </div>
-      </div>
-    `;
-  }).join('') :
-  '<div class="empty-people">No hay solicitudes pendientes.</div>';
-
-  dest.querySelectorAll('[data-alt-state]').forEach(b=>{
-   dest.querySelectorAll('[data-alt-state]').forEach(b=>{
-  b.onclick=async()=>{
-
-    const solicitud=all.find(
-      r=>Number(r.solicitud_id)===Number(b.dataset.altId)
-    );
-
-    const estado=b.dataset.altState;
-
-    const x=await db.rpc('actualizar_solicitud_horario',{
-      p_solicitud_id:Number(b.dataset.altId),
-      p_estado:estado
-    });
-
-    if(x.error){
-      alert('No se pudo actualizar: '+x.error.message);
-      return;
-    }
-
-    if(estado==='aceptada' && solicitud){
-
-      let numero=String(solicitud.whatsapp_persona||'').replace(/\D/g,'');
-      if(numero.length===9) numero='51'+numero;
-
-      const fecha=new Date(
-        String(solicitud.fecha_preferida)+'T12:00:00'
-      ).toLocaleDateString('es-PE',{
-        weekday:'long',
-        day:'numeric',
-        month:'long'
-      });
-
-      const hora=new Date(
-        `2000-01-01T${String(solicitud.hora_preferida).slice(0,5)}`
-      ).toLocaleTimeString('es-PE',{
-        hour:'numeric',
-        minute:'2-digit'
-      });
-
-      const nombre=String(solicitud.nombre_persona||'').trim().split(' ')[0];
-
-const mensaje =
-`Hola ${nombre}, recibí tu solicitud de otro horario para la asesoría filosófica :). Soy ${solicitud.instructor_nombre} y sí dispondré de tiempo.
-${fecha.charAt(0).toUpperCase()+fecha.slice(1)}
-${hora}
-¡Nos vemos ${nombre}!`;
-      if(numero){
-      const whatsappUrl =
-  'https://wa.me/' + numero +
-  '?text=' + encodeURIComponent(mensaje);
-
-window.open(whatsappUrl, '_blank', 'noopener');
-      }
-    }
-
-    await renderAlternateRequests();
-  };
-});
-    b.onclick=async()=>{
-      const x=await db.rpc('actualizar_solicitud_horario',{
-        p_solicitud_id:Number(b.dataset.altId),
-        p_estado:b.dataset.altState
-      });
-
-      if(x.error){
-        alert('No se pudo actualizar: '+x.error.message);
-        return;
-      }
-
-      await renderAlternateRequests();
-    };
-  });
-}
  async function renderAdviceBookings(){
   let box=document.querySelector('#adviceBookings');
   if(!box){box=document.createElement('section');box.id='adviceBookings';box.style.cssText='margin:18px 0 26px;padding:18px;border:1px solid #d8d2c4;border-radius:14px;background:#fffdf7';list.parentNode.insertBefore(box,list);}
   box.innerHTML='<h3 style="margin:0 0 6px">Asesorías confirmadas</h3><p class="admin-dev-note">Cargando reservas…</p>';
-  const q=await db.rpc('listar_reservas_asesoria_panel');
-  if(q.error){box.innerHTML='<h3 style="margin:0 0 6px">Asesorías confirmadas</h3><p class="admin-dev-note">No se pudieron cargar las reservas: '+esc2(q.error.message)+'</p>';return;}
-  const all=(Array.isArray(q.data)?q.data:[]).map(r=>({...r,id:r.id??r.reserva_id}));
+  // V39: la nueva función devuelve JSON y evita el conflicto de columnas `id`
+  // que producía la función anterior de PostgreSQL.
+  const q=await db.rpc('listar_reservas_asesoria_confirmadas_v2');
+  if(q.error){box.innerHTML='<h3 style="margin:0 0 6px">Asesorías confirmadas</h3><p class="admin-dev-note">No se pudieron cargar las reservas. Primero ejecuta el archivo <strong>SQL_CORREGIR_ASESORIAS_CONFIRMADAS.sql</strong> en Supabase.<br><small>'+esc2(q.error.message)+'</small></p>';return;}
+  const all=Array.isArray(q.data)?q.data:[];
   const now=new Date();
   const tabs=['proximas','realizadas','canceladas'];
   box.innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">Asesorías confirmadas</h3><p class="admin-dev-note" style="margin:4px 0 0">${window.__naIsAdmin||(window.__naRoles||[]).includes('responsable_asesorias')?'Todas las reservas':'Tus próximas reservas'}</p></div><div id="bookingTabs" style="display:flex;gap:6px;flex-wrap:wrap">${tabs.map((t,i)=>`<button type="button" class="mini-btn" data-book-tab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div><div id="bookingList" style="margin-top:12px"></div>`;
@@ -529,5 +355,5 @@ window.open(whatsappUrl, '_blank', 'noopener');
   } else {let r=id?await db.from(d.table).update(p).eq('id',id):await db.from(d.table).insert(p);if(r.error)throw r.error;}
   m.textContent='Guardado ✓';m.className='auth-msg success';await load();setTimeout(()=>modal.hidden=true,450);}catch(err){m.textContent='No se pudo guardar: '+(err?.message||err);m.className='auth-msg error';}}
  async function removeRecord(r){ if(!r||!confirm(`¿Eliminar ${mode==='advice'?'este instructor':mode==='readings'?'esta lectura':'este evento'}?`))return; try{ if(mode==='advice'){const x=await db.rpc('admin_eliminar_instructor',{p_instructor_id:Number(r.id)}); if(x.error)throw x.error;} else if(mode==='events'){const x=await db.from('eventos').delete().eq('id',r.id); if(x.error)throw x.error;} else if(mode==='readings'){await db.from('lecturas_virtudes').delete().eq('lectura_id',r.id); const x=await db.from('lecturas').delete().eq('id',r.id); if(x.error)throw x.error;} await load(); }catch(err){alert('No se pudo eliminar: '+(err?.message||err));} }
- $('#bookingsShortcut')?.addEventListener('click',async()=>{await open('advice');setTimeout(()=>document.querySelector('#adviceBookings')?.scrollIntoView({behavior:'smooth',block:'start'}),120);});$('#virtuesShortcut')?.addEventListener('click',()=>open('virtues'));$('#eventsShortcut')?.addEventListener('click',()=>open('events'));$('#donationsShortcut')?.addEventListener('click',()=>open('donations'));$('#readingsShortcut')?.addEventListener('click',()=>open('readings'));$('#adviceShortcut')?.addEventListener('click',()=>open('advice'));$('#cmAdd').onclick=()=>edit();$('#cmSearch').oninput=render;$('#cmClose').onclick=$('#cmCancel').onclick=()=>modal.hidden=true;modal.addEventListener('click',e=>{if(e.target===modal)modal.hidden=true});$('#cmForm').onsubmit=save;
+ $('#virtuesShortcut')?.addEventListener('click',()=>open('virtues'));$('#eventsShortcut')?.addEventListener('click',()=>open('events'));$('#donationsShortcut')?.addEventListener('click',()=>open('donations'));$('#readingsShortcut')?.addEventListener('click',()=>open('readings'));$('#adviceShortcut')?.addEventListener('click',()=>open('advice'));$('#bookingsShortcut')?.addEventListener('click',async()=>{await open('advice');document.querySelector('#adviceBookings')?.scrollIntoView({behavior:'smooth',block:'start'});});$('#cmAdd').onclick=()=>edit();$('#cmSearch').oninput=render;$('#cmClose').onclick=$('#cmCancel').onclick=()=>modal.hidden=true;modal.addEventListener('click',e=>{if(e.target===modal)modal.hidden=true});$('#cmForm').onsubmit=save;
 })();
