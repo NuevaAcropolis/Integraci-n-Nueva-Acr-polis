@@ -403,6 +403,11 @@ async function renderAlternateRequests(){
             data-alt-id="${r.solicitud_id}">
             Rechazar
           </button>
+          <button
+  class="mini-btn danger"
+  data-alt-delete="${r.solicitud_id}">
+  Eliminar
+</button>
 
         </div>
       </div>
@@ -411,6 +416,22 @@ async function renderAlternateRequests(){
   '<div class="empty-people">No hay solicitudes pendientes.</div>';
 
   dest.querySelectorAll('[data-alt-state]').forEach(b=>{
+    dest.querySelectorAll('[data-alt-delete]').forEach(b=>{
+  b.onclick=async()=>{
+    if(!confirm('¿Eliminar definitivamente esta solicitud?')) return;
+
+    const x=await db.rpc('eliminar_solicitud_horario',{
+      p_solicitud_id:Number(b.dataset.altDelete)
+    });
+
+    if(x.error){
+      alert('No se pudo eliminar: '+x.error.message);
+      return;
+    }
+
+    await renderAlternateRequests();
+  };
+});
     b.onclick=async()=>{
       const x=await db.rpc('actualizar_solicitud_horario',{
         p_solicitud_id:Number(b.dataset.altId),
