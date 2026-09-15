@@ -24,9 +24,16 @@ function generate(start,end){
  return out.sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.hora||"").localeCompare(b.hora||""))
 }
 function activityImg(a){
- if(!a.foto)return "";
- if(/^https?:\/\//i.test(a.foto))return a.foto;
- return `img/actividades/${a.foto}`;
+ const foto=a&&a.foto;
+ if(!foto)return "";
+ if(/^https?:\/\//i.test(foto))return foto;
+ return `img/actividades/${foto}`;
+}
+function activityBg(a){
+ const main=activityImg(a);
+ const fb=a&&a._fotoRespaldo ? `img/actividades/${a._fotoRespaldo}` : "";
+ if(main&&fb&&main!==fb)return `url('${main}'),url('${fb}')`;
+ return main?`url('${main}')`:"";
 }
 function autoCover(a){
  const title=(a.nombre||"Actividad").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -51,7 +58,7 @@ function eventHTML(a){
  }
  const s=SEDES[a.sede]||{clase:"san-carlos"};
  return `<button class="event-card" data-event="${a.id}" data-date="${a.fecha}">
- ${activityImg(a)?`<div class="event-img" style="background-image:url('${activityImg(a)}')"></div>`:autoCover(a)}
+ ${activityImg(a)?`<div class="event-img" style="background-image:${activityBg(a)}"></div>`:autoCover(a)}
  <div class="event-body"><div class="event-time">${fmtTime(a.hora)}</div><div class="event-name">${a.nombre}</div>
  <div class="venue-tag"><span class="dot ${s.clase}"></span>${a.sede} ›</div></div></button>`
 }
@@ -124,7 +131,7 @@ function openActivity(id,date){
  const saludo=a.encargado?`Hola ${a.encargado},`:"Hola,";
  const msg=encodeURIComponent(`${saludo} vi ${a.nombre} en la página de Nueva Acrópolis y me dio curiosidad conocer un poco más. ¿Me brindas información?`);
  show(`<div class="activity-modal">
-   <div class="activity-cover zoomable-photo" data-full-image="${activityImg(a)}" style="background-image:url('${activityImg(a)}')"></div>
+   <div class="activity-cover zoomable-photo" data-full-image="${activityImg(a)}" style="background-image:${activityBg(a)}"></div>
    <div class="activity-copy">
      <p class="eyebrow">${a.sede} · ${fmtTime(a.hora)}</p>
      <h2>${a.nombre}</h2><p class="lead"><em>${a.frase}</em></p>
@@ -142,7 +149,7 @@ function openActivity(id,date){
 }
 
 function activityCard(x){
- return `<button class="space-card" data-act="${x.id}"><div class="space-photo" style="background-image:url('${activityImg(x)}')"></div><div class="space-card-body"><span class="eyebrow">TALLER · CÍRCULO</span><h3>${x.nombre}</h3><p>${x.frase}</p><span class="discover">Conocer →</span></div></button>`
+ return `<button class="space-card" data-act="${x.id}"><div class="space-photo" style="background-image:${activityBg(x)}"></div><div class="space-card-body"><span class="eyebrow">TALLER · CÍRCULO</span><h3>${x.nombre}</h3><p>${x.frase}</p><span class="discover">Conocer →</span></div></button>`
 }
 function areaCard(x){
  const f=(x.fotos&&x.fotos[0])||x.foto||x.id+"-1.jpg";
@@ -212,7 +219,7 @@ function recurringSummaryCard(a){
   const labels={1:"lunes",2:"martes",3:"miércoles",4:"jueves",5:"viernes",6:"sábados",7:"domingos"};
   const days=(a.dias||[]).map(d=>labels[d]).join(" y ");
   return `<button class="summary-event-card" data-summary="${a.id}">
-    <div class="summary-event-img" style="background-image:url('${activityImg(a)}')"></div>
+    <div class="summary-event-img" style="background-image:${activityBg(a)}"></div>
     <div class="summary-event-copy">
       <span class="eyebrow">TALLER · CÍRCULO · ACTIVIDAD</span>
       <h3>${a.nombre}</h3>
