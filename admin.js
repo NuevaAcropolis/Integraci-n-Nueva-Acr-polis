@@ -467,7 +467,7 @@ const mensaje =
 ${emojiCalendario} ${fecha.charAt(0).toUpperCase()+fecha.slice(1)}
 ${emojiReloj} ${hora}
 
-¡Nos vemos!`;
+¡Nos vemos ${nombre}!`;
       if(numero){
         window.open(
           `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`,
