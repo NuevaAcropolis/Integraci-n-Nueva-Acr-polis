@@ -416,17 +416,61 @@ async function renderAlternateRequests(){
   '<div class="empty-people">No hay solicitudes pendientes.</div>';
 
   dest.querySelectorAll('[data-alt-state]').forEach(b=>{
-    dest.querySelectorAll('[data-alt-delete]').forEach(b=>{
+   dest.querySelectorAll('[data-alt-state]').forEach(b=>{
   b.onclick=async()=>{
-    if(!confirm('¿Eliminar definitivamente esta solicitud?')) return;
 
-    const x=await db.rpc('eliminar_solicitud_horario',{
-      p_solicitud_id:Number(b.dataset.altDelete)
+    const solicitud=all.find(
+      r=>Number(r.solicitud_id)===Number(b.dataset.altId)
+    );
+
+    const estado=b.dataset.altState;
+
+    const x=await db.rpc('actualizar_solicitud_horario',{
+      p_solicitud_id:Number(b.dataset.altId),
+      p_estado:estado
     });
 
     if(x.error){
-      alert('No se pudo eliminar: '+x.error.message);
+      alert('No se pudo actualizar: '+x.error.message);
       return;
+    }
+
+    if(estado==='aceptada' && solicitud){
+
+      let numero=String(solicitud.whatsapp_persona||'').replace(/\D/g,'');
+      if(numero.length===9) numero='51'+numero;
+
+      const fecha=new Date(
+        String(solicitud.fecha_preferida)+'T12:00:00'
+      ).toLocaleDateString('es-PE',{
+        weekday:'long',
+        day:'numeric',
+        month:'long'
+      });
+
+      const hora=new Date(
+        `2000-01-01T${String(solicitud.hora_preferida).slice(0,5)}`
+      ).toLocaleTimeString('es-PE',{
+        hour:'numeric',
+        minute:'2-digit'
+      });
+
+      const nombre=String(solicitud.nombre_persona||'').trim().split(' ')[0];
+
+      const mensaje=
+`Hola ${nombre} 😊, recibí tu solicitud de otro horario para la asesoría filosófica. Soy ${solicitud.instructor_nombre} y sí dispondré de tiempo.
+
+📅 ${fecha.charAt(0).toUpperCase()+fecha.slice(1)}
+🕐 ${hora}
+
+¡Nos vemos!`;
+
+      if(numero){
+        window.open(
+          `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`,
+          '_blank'
+        );
+      }
     }
 
     await renderAlternateRequests();
