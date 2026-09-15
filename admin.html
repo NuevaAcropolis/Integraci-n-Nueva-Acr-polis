@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="es">
 <head>
+  <meta charset="UTF-8">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Acceso privado · Nueva Acrópolis Huancayo</title>
 <link rel="icon" href="img/favicon.png"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="admin.css">
@@ -35,8 +36,8 @@
 <div class="admin-head"><div><p class="eyebrow">NUEVA ACRÓPOLIS HUANCAYO</p><h1>Panel de gestión</h1><p id="sessionLabel"></p></div><button id="logoutBtn">Cerrar sesión</button></div>
 <div class="admin-modules">
 <article id="agendaShortcut" class="module-card-click"><h3>Agenda y talleres</h3><p>Horarios, responsables y cancelaciones.</p></article>
-<article id="bookingsShortcut" class="module-card-click bookings-shortcut"><h3>Asesorías confirmadas</h3><p>Ver directamente las próximas reservas de todos los instructores.</p></article>
 <article id="adviceShortcut" class="module-card-click"><h3>Asesorías</h3><p>Disponibilidad, bloqueos, reservas y solicitudes.</p></article>
+<article id="bookingsShortcut" class="module-card-click"><h3>Asesorías confirmadas</h3><p>Ver próximas, realizadas y canceladas.</p></article>
 <article id="eventsShortcut" class="module-card-click"><h3>Eventos especiales</h3><p>Crear, ocultar o actualizar eventos ocasionales.</p></article>
 <article id="donationsShortcut" class="module-card-click"><h3>Donaciones</h3><p>Actualizar necesidades y materiales conseguidos.</p></article>
 <article id="readingsShortcut" class="module-card-click"><h3>Pequeñas lecturas</h3><p>Publicar y administrar lecturas filosóficas.</p></article>
@@ -64,7 +65,7 @@
   <label>Frase o descripción breve<textarea id="activityPhrase" rows="3"></textarea></label>
   <label>Fotografía del taller o círculo <span>JPG, PNG o WEBP · máximo 8 MB</span><input id="activityPhotoFile" type="file" accept="image/jpeg,image/png,image/webp"></label>
   <input id="activityPhoto" type="hidden">
-  <div class="activity-photo-preview" id="activityPhotoPreview" hidden><img id="activityPhotoPreviewImg" alt="Vista previa de la fotografía"><div><strong>Fotografía actual</strong><span>Si no eliges otra imagen, esta se conservará.</span></div></div>
+  <div class="activity-photo-preview" id="activityPhotoPreview" hidden><img id="activityPhotoPreviewImg" alt="Vista previa de la fotografía"><div><strong>Fotografía actual</strong><span>Si no eliges otra, esta fotografía se conservará.</span></div></div>
   <label class="active-check"><input id="activityActive" type="checkbox" checked> Actividad activa</label>
   <div class="person-actions"><button class="primary-btn" type="submit">Guardar taller</button><button class="secondary-btn" id="cancelActivityEdit" type="button">Cancelar</button></div><p class="auth-msg" id="activityFormMsg"></p>
  </form>
