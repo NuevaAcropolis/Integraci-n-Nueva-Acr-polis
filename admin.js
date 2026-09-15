@@ -458,11 +458,9 @@ async function renderAlternateRequests(){
       const nombre=String(solicitud.nombre_persona||'').trim().split(' ')[0];
 
 const mensaje =
-`Hola ${nombre}, recibí tu solicitud de otro horario para la asesoría filosófica. Soy ${solicitud.instructor_nombre} y sí dispondré de tiempo.
-
+`Hola ${nombre}, recibí tu solicitud de otro horario para la asesoría filosófica :). Soy ${solicitud.instructor_nombre} y sí dispondré de tiempo.
 ${fecha.charAt(0).toUpperCase()+fecha.slice(1)}
 ${hora}
-
 ¡Nos vemos ${nombre}!`;
       if(numero){
       const whatsappUrl =
