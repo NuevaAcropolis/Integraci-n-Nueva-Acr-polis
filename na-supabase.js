@@ -24,7 +24,7 @@
     const localBySlug=new Map(ACTIVIDADES_RECURRENTES.map(a=>[a.id,a]));
     const mapped=acts.map(a=>{
       const old=localBySlug.get(a.slug)||{};
-      return {...old,id:a.slug,_dbid:a.id,nombre:a.nombre,dias:a.dias||[],hora:(a.hora||'').slice(0,5),sede:a.sede,desde:a.desde,hasta:a.hasta||'2099-12-31',encargado:a.encargado||'',whatsapp:a.whatsapp||'',foto:a.foto||'',frase:a.frase||'',canceladas:cc.get(a.id)||[],excepciones:ee.get(a.id)||{},virtudes:vv.get(a.id)||[]};
+      return {...old,id:a.slug,_dbid:a.id,nombre:a.nombre,dias:a.dias||[],hora:(a.hora||'').slice(0,5),sede:a.sede,desde:a.desde,hasta:a.hasta||'2099-12-31',encargado:a.encargado||'',whatsapp:a.whatsapp||'',foto:a.foto||old.foto||'',_fotoRespaldo:old.foto||'',frase:a.frase||old.frase||'',canceladas:cc.get(a.id)||[],excepciones:ee.get(a.id)||{},virtudes:vv.get(a.id)||[]};
     });
     ACTIVIDADES_RECURRENTES.splice(0,ACTIVIDADES_RECURRENTES.length,...mapped);
     window.NA_SUPABASE_CONNECTED=true; window.NA_PUBLIC_AGENDA_UPDATED_AT=Date.now();
