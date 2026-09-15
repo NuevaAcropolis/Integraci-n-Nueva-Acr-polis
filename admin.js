@@ -457,14 +457,13 @@ async function renderAlternateRequests(){
 
       const nombre=String(solicitud.nombre_persona||'').trim().split(' ')[0];
 
-      const mensaje=
-`Hola ${nombre} 😊, recibí tu solicitud de otro horario para la asesoría filosófica. Soy ${solicitud.instructor_nombre} y sí dispondré de tiempo.
+    const mensaje=
+`Hola ${nombre} \u{1F60A}, recibí tu solicitud de otro horario para la asesoría filosófica. Soy ${solicitud.instructor_nombre} y sí dispondré de tiempo.
 
-📅 ${fecha.charAt(0).toUpperCase()+fecha.slice(1)}
-🕐 ${hora}
+\u{1F4C5} ${fecha.charAt(0).toUpperCase()+fecha.slice(1)}
+\u{1F550} ${hora}
 
 ¡Nos vemos!`;
-
       if(numero){
         window.open(
           `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`,
