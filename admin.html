@@ -34,14 +34,49 @@
 <section class="admin-panel" id="adminPanel" hidden>
 <div class="admin-head"><div><p class="eyebrow">NUEVA ACRÓPOLIS HUANCAYO</p><h1>Panel de gestión</h1><p id="sessionLabel"></p></div><button id="logoutBtn">Cerrar sesión</button></div>
 <div class="admin-modules">
-<article><h3>Agenda y talleres</h3><p>Horarios, responsables y cancelaciones.</p></article>
-<article><h3>Asesorías</h3><p>Disponibilidad, bloqueos, reservas y solicitudes.</p></article>
-<article><h3>Eventos especiales</h3><p>Crear, ocultar o actualizar eventos ocasionales.</p></article>
-<article><h3>Donaciones</h3><p>Actualizar necesidades y materiales conseguidos.</p></article>
-<article><h3>Pequeñas lecturas</h3><p>Publicar y administrar lecturas filosóficas.</p></article>
+<article id="agendaShortcut" class="module-card-click"><h3>Agenda y talleres</h3><p>Horarios, responsables y cancelaciones.</p></article>
+<article id="adviceShortcut" class="module-card-click"><h3>Asesorías</h3><p>Disponibilidad, bloqueos, reservas y solicitudes.</p></article>
+<article id="eventsShortcut" class="module-card-click"><h3>Eventos especiales</h3><p>Crear, ocultar o actualizar eventos ocasionales.</p></article>
+<article id="donationsShortcut" class="module-card-click"><h3>Donaciones</h3><p>Actualizar necesidades y materiales conseguidos.</p></article>
+<article id="readingsShortcut" class="module-card-click"><h3>Pequeñas lecturas</h3><p>Publicar y administrar lecturas filosóficas.</p></article>
 <article id="peopleShortcut"><h3>Personas y permisos</h3><p>Administradores, instructores y responsables autorizados.</p></article>
 </div>
 <p class="admin-dev-note">Los módulos visibles se ajustarán a los permisos de cada cuenta.</p>
+
+<section class="agenda-admin-module" id="agendaAdminModule" hidden>
+  <div class="people-toolbar">
+    <div><p class="eyebrow">PROGRAMACIÓN</p><h2>Agenda y talleres</h2><p>Crea y administra talleres sin modificar GitHub.</p></div>
+    <button class="primary-btn" id="addActivityBtn" type="button">+ Nuevo taller</button>
+  </div>
+  <div class="agenda-admin-filters"><input id="activitySearch" type="search" placeholder="Buscar taller…"><select id="activityStatus"><option value="active">Activos</option><option value="all">Todos</option><option value="inactive">Finalizados</option></select></div>
+  <div id="activityAdminMsg" class="auth-msg"></div><div class="activity-admin-list" id="activityAdminList"></div>
+</section>
+<div class="person-modal" id="activityModal" hidden><div class="person-dialog activity-dialog" role="dialog" aria-modal="true">
+ <button class="person-close" id="activityClose" type="button">×</button><p class="eyebrow">AGENDA Y TALLERES</p><h2 id="activityTitle">Nuevo taller</h2>
+ <form id="activityForm"><input type="hidden" id="activityId">
+  <label>Nombre del taller o actividad<input id="activityName" required></label>
+  <div class="person-two"><label>Sede<select id="activityVenue" required><option>San Carlos</option><option>El Tambo</option><option>Julio Sumar</option></select></label><label>Hora<input id="activityTime" type="time" step="900" required></label></div>
+  <fieldset><legend>Días habituales</legend><div class="days-grid" id="activityDays"></div></fieldset>
+  <div class="person-two"><label>Fecha de inicio<input id="activityFrom" type="date" required></label><label>Fecha de fin<input id="activityTo" type="date" required></label></div>
+  <div class="person-two"><label>Responsable<input id="activityLead"></label><label>WhatsApp<input id="activityWhatsapp" inputmode="tel"></label></div>
+  <label>Frase o descripción breve<textarea id="activityPhrase" rows="3"></textarea></label>
+  <label>Foto <span>(nombre del archivo o URL)</span><input id="activityPhoto" placeholder="ej. marinera.webp"></label>
+  <label class="active-check"><input id="activityActive" type="checkbox" checked> Actividad activa</label>
+  <div class="person-actions"><button class="primary-btn" type="submit">Guardar taller</button><button class="secondary-btn" id="cancelActivityEdit" type="button">Cancelar</button></div><p class="auth-msg" id="activityFormMsg"></p>
+ </form>
+</div></div>
+<div class="person-modal" id="exceptionModal" hidden><div class="person-dialog exception-dialog"><button class="person-close" id="exceptionClose" type="button">×</button><p class="eyebrow">CAMBIO DE UNA FECHA</p><h2 id="exceptionTitle">Gestionar fecha</h2>
+<form id="exceptionForm"><input type="hidden" id="exceptionActivityId"><label>Fecha<input id="exceptionDate" type="date" required></label><label>¿Qué deseas hacer?<select id="exceptionType"><option value="cancelar">Cancelar esta fecha</option><option value="cambiar_hora">Cambiar solo la hora</option></select></label><label id="newTimeWrap" hidden>Nueva hora<input id="exceptionNewTime" type="time" step="900"></label><label>Nota <span>(opcional)</span><input id="exceptionNote" placeholder="Ej. feriado, cambio especial…"></label><div class="person-actions"><button class="primary-btn" type="submit">Guardar cambio</button><button class="secondary-btn" id="cancelException" type="button">Cancelar</button></div><p class="auth-msg" id="exceptionMsg"></p></form>
+</div></div>
+
+
+<section class="people-module" id="contentManager" hidden>
+  <div class="people-toolbar"><div><p class="eyebrow" id="cmEyebrow">GESTIÓN</p><h2 id="cmTitle">Contenido</h2><p id="cmIntro"></p></div><button class="primary-btn" id="cmAdd" type="button">+ Nuevo</button></div>
+  <div class="agenda-admin-filters"><input id="cmSearch" type="search" placeholder="Buscar…"></div>
+  <div id="cmMsg" class="auth-msg"></div><div class="activity-admin-list" id="cmList"></div>
+</section>
+<div class="person-modal" id="cmModal" hidden><div class="person-dialog activity-dialog"><button class="person-close" id="cmClose" type="button">×</button><p class="eyebrow" id="cmModalEye">GESTIÓN</p><h2 id="cmModalTitle">Editar</h2><form id="cmForm"><input type="hidden" id="cmId"><div id="cmFields"></div><div class="person-actions"><button class="primary-btn" type="submit">Guardar</button><button class="secondary-btn" id="cmCancel" type="button">Cancelar</button></div><p class="auth-msg" id="cmFormMsg"></p></form></div></div>
+
 <section class="people-module" id="peopleModule" hidden>
   <div class="people-toolbar">
     <div><p class="eyebrow">ADMINISTRACIÓN</p><h2>Personas y permisos</h2><p>Registra personas, asigna responsabilidades y prepara su acceso al panel.</p></div>
