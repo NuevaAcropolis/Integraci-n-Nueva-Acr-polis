@@ -469,10 +469,11 @@ ${emojiReloj} ${hora}
 
 ¡Nos vemos ${nombre}!`;
       if(numero){
-        window.open(
-          `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`,
-          '_blank'
-        );
+      const whatsappUrl =
+  'https://wa.me/' + numero +
+  '?text=' + encodeURIComponent(mensaje);
+
+window.open(whatsappUrl, '_blank', 'noopener');
       }
     }
 
