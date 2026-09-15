@@ -457,11 +457,15 @@ async function renderAlternateRequests(){
 
       const nombre=String(solicitud.nombre_persona||'').trim().split(' ')[0];
 
-    const mensaje=
-`Hola ${nombre} \u{1F60A}, recibí tu solicitud de otro horario para la asesoría filosófica. Soy ${solicitud.instructor_nombre} y sí dispondré de tiempo.
+   const emojiSonrisa = String.fromCodePoint(0x1F60A);
+const emojiCalendario = String.fromCodePoint(0x1F4C5);
+const emojiReloj = String.fromCodePoint(0x1F550);
 
-\u{1F4C5} ${fecha.charAt(0).toUpperCase()+fecha.slice(1)}
-\u{1F550} ${hora}
+const mensaje =
+`Hola ${nombre} ${emojiSonrisa}, recibí tu solicitud de otro horario para la asesoría filosófica. Soy ${solicitud.instructor_nombre} y sí dispondré de tiempo.
+
+${emojiCalendario} ${fecha.charAt(0).toUpperCase()+fecha.slice(1)}
+${emojiReloj} ${hora}
 
 ¡Nos vemos!`;
       if(numero){
