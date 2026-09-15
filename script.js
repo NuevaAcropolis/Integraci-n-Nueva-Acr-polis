@@ -14,7 +14,7 @@ function occurs(a,d){const dow=((d.getDay()+6)%7)+1,s=iso(d);return a.dias.inclu
 function generate(start,end){
  const out=[];
  for(let d=new Date(start);d<=end;d=addDays(d,1)){
-   if(!disabledWeek(mondayOf(d))) ACTIVIDADES_RECURRENTES.forEach(a=>{if(occurs(a,d))out.push({...a,fecha:iso(d)})})
+   if(!disabledWeek(mondayOf(d))) ACTIVIDADES_RECURRENTES.forEach(a=>{if(occurs(a,d)){const fecha=iso(d),ex=(a.excepciones||{})[fecha]||{};out.push({...a,...ex,fecha})}})
  }
  EVENTOS_ESPECIALES.forEach(e=>{const d=parseDate(e.fecha);if(d>=start&&d<=end)out.push({...e,virtudes:e.virtudes||[]})});
  (typeof EVENTOS_IMPORTANTES!=="undefined"?EVENTOS_IMPORTANTES:[]).forEach(e=>{
@@ -223,7 +223,7 @@ function recurringSummaryCard(a){
 function importantMiniCard(e){
   const d=parseDate(e.fecha);
   return `<button class="summary-event-card special-summary" data-important-poster="${e.foto||""}">
-    <div class="summary-event-img" style="background-image:url('img/eventos/${e.foto||""}')"></div>
+    <div class="summary-event-img" style="background-image:url('${eventImageSrc(e.foto)}')"></div>
     <div class="summary-event-copy">
       <span class="eyebrow">${e.tipo||"EVENTO IMPORTANTE"}</span>
       <h3>${e.nombre}</h3>
@@ -294,6 +294,24 @@ document.addEventListener("click",e=>{
 
 
 /* Eventos importantes de la portada */
+function eventImageSrc(foto){
+  if(!foto)return "";
+  return /^(https?:|data:|blob:)/i.test(foto)?foto:`img/eventos/${foto}`;
+}
+function openEventDetails(id){
+  const e=(typeof EVENTOS_IMPORTANTES!=="undefined"?EVENTOS_IMPORTANTES:[]).find(x=>String(x.id)===String(id));
+  if(!e)return;
+  const d=parseDate(e.fecha), img=eventImageSrc(e.foto);
+  const pago=e.modalidad_pago==='De pago'||Number(e.costo)>0;
+  const acceso=e.solo_miembros?'Solo para miembros':'Abierto';
+  const costo=pago?(e.costo?`S/ ${Number(e.costo).toFixed(2).replace('.00','')}`:'De pago'):'Gratuito';
+  const rawWa=String(e.whatsapp||'').replace(/\D/g,''); const waNum=rawWa.length===9?'51'+rawWa:rawWa; const wa=waNum?`<a class="event-detail-cta" target="_blank" rel="noopener" href="https://wa.me/${waNum}?text=${encodeURIComponent('Hola, vi el evento '+(e.titulo||e.nombre||'')+' en la página de Nueva Acrópolis y quisiera más información.')}">Consultar por WhatsApp</a>`:'';
+  const modal=document.createElement('div'); modal.className='event-detail-modal';
+  modal.innerHTML=`<div class="event-detail-card"><button class="event-detail-close" aria-label="Cerrar">×</button>${img?`<button class="event-detail-image" data-full-image="${img}" style="background-image:url('${img}')" aria-label="Ver imagen completa"></button>`:''}<div class="event-detail-copy"><span class="eyebrow">${e.tipo||'EVENTO ESPECIAL'}</span><h2>${e.nombre||e.titulo||''}</h2><p class="important-date">${d.getDate()} de ${MONTHS[d.getMonth()]} de ${d.getFullYear()}${e.hora?` · ${fmtTime(e.hora)}`:''}</p><div class="event-detail-badges"><span>${acceso}</span><span>${costo}</span></div><p>${e.descripcion||''}</p>${e.detalle?`<div class="event-detail-full">${e.detalle}</div>`:''}<p class="important-place">${e.sede||''}</p>${wa}</div></div>`;
+  document.body.appendChild(modal);document.body.classList.add('poster-open');
+  modal.querySelector('.event-detail-close').onclick=()=>{modal.remove();document.body.classList.remove('poster-open')};
+  modal.onclick=x=>{if(x.target===modal){modal.remove();document.body.classList.remove('poster-open')}};
+}
 function renderImportantEvents(){
   const grid=$("#importantEventsGrid"); if(!grid)return;
   const today=iso(new Date());
@@ -302,16 +320,21 @@ function renderImportantEvents(){
     .sort((a,b)=>a.fecha.localeCompare(b.fecha));
   grid.innerHTML=arr.length?arr.map(e=>{
     const d=parseDate(e.fecha);
+    const img=eventImageSrc(e.foto);
+    const pago=e.modalidad_pago==='De pago'||Number(e.costo)>0;
     return `<article class="important-event">
-      <button class="important-poster" data-poster="img/eventos/${e.foto||""}" style="background-image:url('img/eventos/${e.foto||""}')" aria-label="Ver invitación completa"></button>
+      <button class="important-poster" data-poster="${img}" style="background-image:url('${img}')" aria-label="Ver invitación completa"></button>
       <div class="important-body"><span class="eyebrow">${e.tipo||"EVENTO ESPECIAL"}</span>
       <h3>${e.nombre}</h3>
       <p class="important-date">${d.getDate()} de ${MONTHS[d.getMonth()]} de ${d.getFullYear()}${e.hora?` · ${fmtTime(e.hora)}`:""}</p>
-      <p>${e.descripcion||""}</p><p class="important-detail">${e.detalle||""}</p>${videoBlock(e)}
+      <div class="event-mini-badges">${e.solo_miembros?'<span>Solo miembros</span>':'<span>Abierto</span>'}<span>${pago?(e.costo?`S/ ${Number(e.costo).toFixed(2).replace('.00','')}`:'De pago'):'Gratuito'}</span></div>
+      <p>${e.descripcion||""}</p>
+      <button class="event-more-btn" data-event-details="${e.id}">Ver información completa →</button>
       <p class="important-place">${e.sede||""}</p></div>
     </article>`;
   }).join(""):`<div class="important-empty">Los próximos eventos especiales aparecerán aquí.</div>`;
-  $$("[data-poster]").forEach(b=>b.onclick=()=>openPoster(b.dataset.poster));
+  $$("[data-poster]").forEach(b=>b.onclick=()=>{if(b.dataset.poster)openPoster(b.dataset.poster)});
+  $$("[data-event-details]").forEach(b=>b.onclick=()=>openEventDetails(b.dataset.eventDetails));
 }
 renderImportantEvents();
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closePoster()});
