@@ -194,10 +194,12 @@ Se quitarán sus responsabilidades y ya no tendrá acceso a los módulos asignad
     const visibility={
       agendaShortcut: canManageAgenda,
       adviceShortcut: isAdmin || roles.includes('instructor') || roles.includes('responsable_asesorias'),
+      bookingsShortcut: isAdmin || roles.includes('instructor') || roles.includes('responsable_asesorias'),
       eventsShortcut: isAdmin,
       donationsShortcut: isAdmin || roles.includes('encargado_donaciones'),
       readingsShortcut: isAdmin || roles.includes('encargado_lecturas'),
-      peopleShortcut: isAdmin
+      peopleShortcut: isAdmin,
+      virtuesShortcut: isAdmin
     };
     Object.entries(visibility).forEach(([id,ok])=>{const el=document.getElementById(id);if(el)el.hidden=!ok;});
 
@@ -314,7 +316,7 @@ Se quitarán sus responsabilidades y ya no tendrá acceso a los módulos asignad
   box.innerHTML='<h3 style="margin:0 0 6px">Asesorías confirmadas</h3><p class="admin-dev-note">Cargando reservas…</p>';
   const q=await db.rpc('listar_reservas_asesoria_panel');
   if(q.error){box.innerHTML='<h3 style="margin:0 0 6px">Asesorías confirmadas</h3><p class="admin-dev-note">No se pudieron cargar las reservas: '+esc2(q.error.message)+'</p>';return;}
-  const all=Array.isArray(q.data)?q.data:[];
+  const all=(Array.isArray(q.data)?q.data:[]).map(r=>({...r,id:r.id??r.reserva_id}));
   const now=new Date();
   const tabs=['proximas','realizadas','canceladas'];
   box.innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">Asesorías confirmadas</h3><p class="admin-dev-note" style="margin:4px 0 0">${window.__naIsAdmin||(window.__naRoles||[]).includes('responsable_asesorias')?'Todas las reservas':'Tus próximas reservas'}</p></div><div id="bookingTabs" style="display:flex;gap:6px;flex-wrap:wrap">${tabs.map((t,i)=>`<button type="button" class="mini-btn" data-book-tab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div><div id="bookingList" style="margin-top:12px"></div>`;
@@ -348,5 +350,5 @@ Se quitarán sus responsabilidades y ya no tendrá acceso a los módulos asignad
   } else {let r=id?await db.from(d.table).update(p).eq('id',id):await db.from(d.table).insert(p);if(r.error)throw r.error;}
   m.textContent='Guardado ✓';m.className='auth-msg success';await load();setTimeout(()=>modal.hidden=true,450);}catch(err){m.textContent='No se pudo guardar: '+(err?.message||err);m.className='auth-msg error';}}
  async function removeRecord(r){ if(!r||!confirm(`¿Eliminar ${mode==='advice'?'este instructor':mode==='readings'?'esta lectura':'este evento'}?`))return; try{ if(mode==='advice'){const x=await db.rpc('admin_eliminar_instructor',{p_instructor_id:Number(r.id)}); if(x.error)throw x.error;} else if(mode==='events'){const x=await db.from('eventos').delete().eq('id',r.id); if(x.error)throw x.error;} else if(mode==='readings'){await db.from('lecturas_virtudes').delete().eq('lectura_id',r.id); const x=await db.from('lecturas').delete().eq('id',r.id); if(x.error)throw x.error;} await load(); }catch(err){alert('No se pudo eliminar: '+(err?.message||err));} }
- $('#virtuesShortcut')?.addEventListener('click',()=>open('virtues'));$('#eventsShortcut')?.addEventListener('click',()=>open('events'));$('#donationsShortcut')?.addEventListener('click',()=>open('donations'));$('#readingsShortcut')?.addEventListener('click',()=>open('readings'));$('#adviceShortcut')?.addEventListener('click',()=>open('advice'));$('#cmAdd').onclick=()=>edit();$('#cmSearch').oninput=render;$('#cmClose').onclick=$('#cmCancel').onclick=()=>modal.hidden=true;modal.addEventListener('click',e=>{if(e.target===modal)modal.hidden=true});$('#cmForm').onsubmit=save;
+ $('#bookingsShortcut')?.addEventListener('click',async()=>{await open('advice');setTimeout(()=>document.querySelector('#adviceBookings')?.scrollIntoView({behavior:'smooth',block:'start'}),120);});$('#virtuesShortcut')?.addEventListener('click',()=>open('virtues'));$('#eventsShortcut')?.addEventListener('click',()=>open('events'));$('#donationsShortcut')?.addEventListener('click',()=>open('donations'));$('#readingsShortcut')?.addEventListener('click',()=>open('readings'));$('#adviceShortcut')?.addEventListener('click',()=>open('advice'));$('#cmAdd').onclick=()=>edit();$('#cmSearch').oninput=render;$('#cmClose').onclick=$('#cmCancel').onclick=()=>modal.hidden=true;modal.addEventListener('click',e=>{if(e.target===modal)modal.hidden=true});$('#cmForm').onsubmit=save;
 })();
