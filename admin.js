@@ -420,7 +420,7 @@ async function renderAlternateRequests(){
   '<div class="empty-people">No hay solicitudes pendientes.</div>';
 
   dest.querySelectorAll('[data-alt-state]').forEach(b=>{
-dest.querySelectorAll('[data-alt-state]').forEach(b=>{
+
   b.onclick=async()=>{
 
     const solicitud=all.find(
