@@ -474,7 +474,28 @@ ${hora}
 window.open(whatsappUrl, '_blank', 'noopener');
       }
     }
+if(estado==='rechazada' && solicitud){
 
+  let numero=String(solicitud.whatsapp_persona||'').replace(/\D/g,'');
+  if(numero.length===9) numero='51'+numero;
+
+  const nombre=String(solicitud.nombre_persona||'').trim().split(' ')[0];
+
+  const mensaje=
+`Hola ${nombre}, recibí tu solicitud de otro horario para la asesoría filosófica. Soy ${solicitud.instructor_nombre}. Lamentablemente, en el horario que propusiste no tendré disponibilidad.
+
+Puedes ingresar nuevamente a la página y elegir alguno de mis horarios disponibles o enviarme otra propuesta.
+
+¡Espero que podamos coincidir pronto!`;
+
+  if(numero){
+    window.open(
+      'https://wa.me/'+numero+'?text='+encodeURIComponent(mensaje),
+      '_blank',
+      'noopener'
+    );
+  }
+}
     await renderAlternateRequests();
   };
 });
