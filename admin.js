@@ -420,12 +420,14 @@ async function renderAlternateRequests(){
   '<div class="empty-people">No hay solicitudes pendientes.</div>';
 
   dest.querySelectorAll('[data-alt-state]').forEach(b=>{
-   dest.querySelectorAll('[data-alt-state]').forEach(b=>{
+dest.querySelectorAll('[data-alt-state]').forEach(b=>{
   b.onclick=async()=>{
 
     const solicitud=all.find(
       r=>Number(r.solicitud_id)===Number(b.dataset.altId)
     );
+
+    if(!solicitud) return;
 
     const estado=b.dataset.altState;
 
@@ -439,10 +441,16 @@ async function renderAlternateRequests(){
       return;
     }
 
-    if(estado==='aceptada' && solicitud){
+    let numero=String(solicitud.whatsapp_persona||'').replace(/\D/g,'');
+    if(numero.length===9) numero='51'+numero;
 
-      let numero=String(solicitud.whatsapp_persona||'').replace(/\D/g,'');
-      if(numero.length===9) numero='51'+numero;
+    const nombre=String(solicitud.nombre_persona||'')
+      .trim()
+      .split(' ')[0];
+
+    let mensaje='';
+
+    if(estado==='aceptada'){
 
       const fecha=new Date(
         String(solicitud.fecha_preferida)+'T12:00:00'
@@ -459,60 +467,54 @@ async function renderAlternateRequests(){
         minute:'2-digit'
       });
 
-      const nombre=String(solicitud.nombre_persona||'').trim().split(' ')[0];
+      mensaje=
+`Hola ${nombre}, recibí tu solicitud de otro horario para la asesoría filosófica. Soy ${solicitud.instructor_nombre} y sí dispondré de tiempo.
 
-const mensaje =
-`Hola ${nombre}, recibí tu solicitud de otro horario para la asesoría filosófica :). Soy ${solicitud.instructor_nombre} y sí dispondré de tiempo.
 ${fecha.charAt(0).toUpperCase()+fecha.slice(1)}
 ${hora}
+
 ¡Nos vemos ${nombre}!`;
-      if(numero){
-      const whatsappUrl =
-  'https://wa.me/' + numero +
-  '?text=' + encodeURIComponent(mensaje);
-
-window.open(whatsappUrl, '_blank', 'noopener');
-      }
     }
-if(estado==='rechazada' && solicitud){
 
-  let numero=String(solicitud.whatsapp_persona||'').replace(/\D/g,'');
-  if(numero.length===9) numero='51'+numero;
-
-  const nombre=String(solicitud.nombre_persona||'').trim().split(' ')[0];
-
-  const mensaje=
+    if(estado==='rechazada'){
+      mensaje=
 `Hola ${nombre}, recibí tu solicitud de otro horario para la asesoría filosófica. Soy ${solicitud.instructor_nombre}. Lamentablemente, en el horario que propusiste no tendré disponibilidad.
 
 Puedes ingresar nuevamente a la página y elegir alguno de mis horarios disponibles o enviarme otra propuesta.
 
 ¡Espero que podamos coincidir pronto!`;
+    }
 
-  if(numero){
-    window.open(
-      'https://wa.me/'+numero+'?text='+encodeURIComponent(mensaje),
-      '_blank',
-      'noopener'
-    );
-  }
-}
+    if(numero && mensaje){
+      window.open(
+        'https://wa.me/'+numero+'?text='+encodeURIComponent(mensaje),
+        '_blank'
+      );
+    }
+
     await renderAlternateRequests();
   };
 });
-    b.onclick=async()=>{
-      const x=await db.rpc('actualizar_solicitud_horario',{
-        p_solicitud_id:Number(b.dataset.altId),
-        p_estado:b.dataset.altState
-      });
 
-      if(x.error){
-        alert('No se pudo actualizar: '+x.error.message);
-        return;
-      }
 
-      await renderAlternateRequests();
-    };
-  });
+dest.querySelectorAll('[data-alt-delete]').forEach(b=>{
+  b.onclick=async()=>{
+
+    if(!confirm('¿Eliminar definitivamente esta solicitud?')) return;
+
+    const x=await db.rpc('eliminar_solicitud_horario',{
+      p_solicitud_id:Number(b.dataset.altDelete)
+    });
+
+    if(x.error){
+      alert('No se pudo eliminar: '+x.error.message);
+      return;
+    }
+
+    await renderAlternateRequests();
+  };
+});
+
 }
  async function renderAdviceBookings(){
   let box=document.querySelector('#adviceBookings');
